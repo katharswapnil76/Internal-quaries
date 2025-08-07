@@ -1,0 +1,194 @@
+
+Shutdown OASIS application :
+===========================
+Login to the oasis application server and stop the application:
+---------------------------------------------------------------
+Prod server 10.0.0.3
+
+[tomcat@oasiswsp1 bin]$ sudo su -
+Last login: Fri Mar  4 14:50:41 GMT 2022 on pts/1
+[root@oasiswsp1 ~]# su - tomcat
+Last login: Tue Feb 15 08:51:54 GMT 2022 on pts/1
+[tomcat@oasiswsp1 ~]$ cd bin/
+[tomcat@oasiswsp1 bin]$ ls -ltr
+total 12
+-rwxr-x---. 1 tomcat tomcat 47 Jan 15  2019 tomcat_start.ksh
+-rwxr-x---. 1 tomcat tomcat 46 Jan 15  2019 tomcat_stop.ksh
+-rwxr-x---. 1 tomcat tomcat 36 Jan 15  2019 tomcat_restart.ksh
+[tomcat@oasiswsp1 bin]$ ./tomcat_stop.ksh
+Using CATALINA_BASE:   /u01/appx/tomcat/version
+Using CATALINA_HOME:   /u01/appx/tomcat/version
+Using CATALINA_TMPDIR: /u01/appx/tomcat/version/temp
+Using JRE_HOME:        /u01/appx/tomcat/jdk/jre
+Using CLASSPATH:       /u01/appx/tomcat/version/bin/bootstrap.jar:/u01/appx/tomcat/version/bin/tomcat-juli.jar
+
+
+Check below link is working or not ? Sometimes we need to check outside of VDI.
+
+
+
+
+Patching Prechecks :
+====================
+
+Loging to the database server : 
+--------------------------------
+Prod server 10.0.0.4
+
+find . -name "*.aud" -mtime +30 -exec rm {} \;
+find . -type f -name '*.trc' -mtime +30 -delete
+find . -type f -name '*.trm' -mtime +30 -delete
+
+tar -zcvf /u01/app/inoapps/oasn1c_grid_home_bkp_12APR22_before_CPU_patching.tar.gz /u01/app/18.0.0.0/grid
+
+
+	Notes:
+			1. The DB system requires access to the Oracle Cloud Infrastructure Object Storage service, this is where the patches are stored.
+			2. The /u01 directory on the database host file system has at least 15 GB of free space for the execution of patching processes.
+			3. The Oracle Clusterware should be up and running on the DB system.
+			4. All nodes of the DB system is up and running (RAC databases)
+			5. You can use DBcli operation only as a root user.
+
+	A. Get the details of the user and Group :
+
+			cat /etc/passwd
+			cat /etc/group
+
+	B. Verify the current patchset level for Grid infrastructure /  DB oracle home
+			dbcli describe-component
+			dbcli describe-latestpatch
+			dbcli list-dbhomes
+			
+	C. Check the status of the database and grid resources:
+			srvctl status database -d <DB_UNIQ_NAME>
+			crsctl stat rest -t
+	D. Precheck :
+			dbcli update-server --precheck
+	E. Check backup of the database
+COL opname for a32
+col start_time for a21
+col Last_update_time for a21
+select INST_ID,SID,SERIAL#,OPNAME,TO_CHAR(START_TIME,'DD-MON-YYYY HH24:MI:SS') START_TIME, TO_CHAR(LAST_UPDATE_TIME,'DD-MON-YYYY HH24:MI:SS') 
+LAST_UPDATE_TIME , SOFAR,TOTALWORK,ROUND(SOFAR/TOTALWORK*100,2) "%COMPLETED" FROM GV$SESSION_LONGOPS WHERE OPNAME LIKE 'RMAN%' AND TOTALWORK!=0
+AND SOFAR!=TOTALWORK ORDER BY 5;
+		
+set pages 200
+set lines 300
+col OUTPUT_BYTES_DISPLAY for a10
+col input_bytes_display for a10
+col time_taken_display for a20
+col status for a10
+Select (select instance_name from v$instance) DB_NAME, session_key,  input_type, status, to_char(start_time,'yyyy-mm-dd hh24:mi') start_time,  to_char(end_time,'yyyy-mm-dd hh24:mi')   end_time, input_bytes_display,  output_bytes_display,  time_taken_display from v$rman_backup_job_details 
+where start_time> sysdate -7 order by session_key asc;
+
+col owner for a30
+select owner,object_type,status, count(*) from dba_objects where status!='VALID' group by owner,object_type,status order by 4 desc;
+select owner,object_name,object_type,status from dba_objects where status!='VALID' order by 1,2 desc;
+
+
+Patching :
+===========
+
+	A. Update cloud tools:
+			sudo su -
+			cliadm update-dbcli
+			dbcli list-jobs	            -------------> List the jobs if it is completed
+
+	B. Applying Grid Patch now :
+			dbcli describe-component
+			dbcli describe-latestpatch
+
+		Perform pre-check on grid before the patch is applied
+			dbcli update-server --precheck
+
+		Check and review the job status to success before applying the patch
+			dbcli describe-job -i  "jobId"
+e.g			dbcli describe-job -i "78061211-892e-4158-ba03-7767f794a0a9"
+e.g			dbcli describe-job -i  "78061211-892e-4158-ba03-7767f794a0a9" -l Verbose
+		Applying patches to grid now:
+			dbcli update-server
+			dbcli describe-job -i  "jobId" -l Verbose
+			dbcli describe-job -i "96b88067-5770-4cbf-a919-c0290aa9b108"
+e.g			dbcli describe-job -i "96b88067-5770-4cbf-a919-c0290aa9b108" -l Verbose
+		Check and wait until patching completed
+			dbcli describe-job -i  "jobId" -l Verbose
+	
+	C. Applying patch on Database
+		
+		Perform pre-check on database before the patch is applied
+			dbcli list-dbhomes  ------------------------> Get the dbhome id
+			dbcli update-dbhome -i <DB_HOME_ID> --precheck
+e.g			dbcli update-dbhome -i ab8fdb26-ee09-43ab-913b-a228315b86c2 -v 18.14.0.0.210420 --precheck
+			
+		Check and review the job status to success before applying the patch
+			dbcli describe-job -i  "jobId"
+			dbcli describe-job -i  "4be18d86-48eb-40a5-93f1-882ffaa32e7c"   
+		
+		Applying patches to database now:
+			dbcli update-dbhome -i <DB_HOME_ID> -v 18.14.0.0.210420
+			dbcli update-dbhome -i ab8fdb26-ee09-43ab-913b-a228315b86c2 -v 18.14.0.0.210420
+	
+		Check and wait until patching completed
+			dbcli describe-job -i  "jobId"
+			dbcli describe-job -i  "c648107c-7a81-40d7-bc36-eedff4159190" -l Verbose
+			dbcli describe-job -i  "c648107c-7a81-40d7-bc36-eedff4159190"
+	
+	D. Check for the latest updated patch level
+		dbcli list-dbhomes
+		dbcli describe-component
+		
+		
+One-off Patching :
+===================
+	A. Pre-check
+		Stop database using srvctl:
+			srvctl stop database -d <db_uniq_name> -o immediate
+			export PATH=/u01/app/oracle/product/18.0.0.0/dbhome_1/OPatch:$PATH
+			echo $ORACLE_HOME
+			echo $PATH
+		
+	   Conflict check :
+		cd /u01/inoapps_backup_CVE/inoapps/33695048
+		cd /u01/inoapps_backup_CVE/inoapps/33695048
+		opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+	B. Apply Patch to DB home(s) as DB home owner :
+		opatch apply -oh /u01/app/oracle/product/18.0.0.0/dbhome_1 -local /u01/inoapps_backup_CVE/inoapps/33695048
+
+    Rollback plan :
+		If something went wrong then if we want to rollback the above patch then we can do it using below command . This is exceptional as generally
+		we are not rolling back. So use below one carefully .
+
+		opatch rollback -local -id 33695048 -oh <ORACLE_HOME>
+
+OPatch_14Mar22
+
+Start the application server :
+
+
+Startup Oasis application :
+===========================
+Login to the etrn application server : 132.145.215.134
+[swapnil.kathar@etrnwsp ~]$ sudo su -
+Last login: Tue Feb 22 19:02:36 GMT 2022 on pts/2
+[root@etrnwsp ~]# su - tomcat
+Last login: Mon Feb 21 12:21:45 GMT 2022 on pts/2
+[tomcat@oasiswsp1 ~]$ cd bin
+[tomcat@oasiswsp1 bin]$ ls
+tomcat_restart.ksh  tomcat_start.ksh  tomcat_stop.ksh
+[tomcat@oasiswsp1 bin]$ ./tomcat_start.ksh
+
+Check below link is working or not ? Sometimes we need to check outside of VDI.
+https://oaswsp1-oasis01.inoappsproducts.com/ords
+
+
+
+set lines 200 pages 200
+COL PATCH_ID    FORMAT 999999999
+COL PATCH_TYPE  FORMAT a10
+COL ACTION      FORMAT a10
+COL STATUS      FORMAT a10
+COL ACTION_TIME FORMAT a30
+COL DESCRIPTION FORMAT a45
+SELECT PATCH_ID,PATCH_TYPE,ACTION,STATUS,ACTION_TIME,DESCRIPTION,SOURCE_VERSION,TARGET_VERSION from dba_registry_sqlpatch order by ACTION_TIME desc;
+
