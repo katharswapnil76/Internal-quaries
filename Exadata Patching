@@ -1,0 +1,1575 @@
+Patch analysis :
+=================
+https://docs.oracle.com/en/engineered-systems/exadata-database-machine/dbmmn/troubleshooting-failing-prerequisite-check-due-dependency-problems-exadata-database-server.html
+https://eclipsys.ca/oracle-exadata-patching-gi-version-compatibility-requirement/
+Additional update for the rpm while installing the database update => https://docs.oracle.com/en/engineered-systems/exadata-database-machine/dbmmn/patchmgr-syntax-database-servers.html
+
+timing for the database patching we will see in the patchmgr_timing_record_oraexa01db01_22.1.22.0.0.240410.1_202409210717.rpt file . 
+
+Check for Supplimental redme :
+------------------------------
+Software Release Requirements
+Exadata Storage Server Software 25.1.0.0.0 supports the following Oracle Database software releases:
+
+Oracle Grid Infrastructure:
+Long Term Release 23ai, 23.5.0.24.07 and later
+Long Term Release 19c, GI Release Update (RU) 19.23.0.0.240416 and later
+Oracle Database:
+Long Term Release 23ai, 23.5.0.24.07 and later
+Long Term Release 19c, GI Release Update (RU) 19.21.0.0.231017 and later
+Additional supported Innovation releases or releases under Market Driven Support or Quarterly Updates exception approval:
+
+Oracle Database
+Release 18c, GI RU 18.14.0.0.210420 and later
+Release 12.2.0.1, GI RU 12.2.0.1.240716 and later
+Release 12.1.0.2, Database Proactive Bundle Patch 12.1.0.2.240716 and later
+Release 11.2.0.4, Quarterly Database Patch for Exadata 11.2.0.4.210119 and later
+
+
+Exadata version => 25.1.0.0.0
+Kernal version details with the patch level 
+5.15.0-300.163.18.7 (uek-core) + uptrack-updates 20241121 (RoCE-based systems, OL 8.10)
+
+
+Database servers bare metal and KVM on RoCE-based systems move from UEK6 to UEK7 kernel. 
+Database servers Xen dom0 on InfiniBand-based systems move from UEK5 to UEK6 kernel. 
+Database servers bare-metal and Xen dom0 on InfiniBand-based systems continue to use UEK6.
+
+As well as we are are moving from the 22.1.22.0.0 to 25.1.0.0.0 so Linux 7 is getting upgraded to the Linux 8.
+Currently our kernal => 4.14.35-2047.528.2.4 (ueknano) + uptrack-updates 20240401 (Physical/KVM/Xen-domU OL 7.9, Xen-dom0 OVS 3.4.7 OL 7)
+
+Critical Patch Update (CPU) Program JAN 2025 Patch Availability Document (DB-only) (Doc ID 3056559.1):
+========================================================================================================
+QFSDP Release date for JAN 2025 => 21 Jan in the afternoon (ref : Doc ID 3056559.1)
+
+
+Exadata Patches need to apply :
+--------------------------------
+Patch 35107481 - Storage server software (25.1.0.0.0.241130)
+Patch 36597726 - Admin/RDMA network switch (10.3(6)) and InfiniBand network switch (2.2.17-2) software
+Patch 36597733 - Database server bare metal / KVM / Xen domU ULN exadata_dbserver_25.1.0.0.0_x86_64_base OL8 channel ISO image (25.1.0.0.0.241130)
+
+Old / Current patch level :
+===========================
+Patch 34694649 - Storage server software (21.2.17.0.0.221020)
+Patch 34574395 - Database server bare metal / KVM / Xen domU ULN exadata_dbserver_21.2.17.0.0_x86_64_base OL7 channel ISO image (21.2.17.0.0.221020)
+Patch 34416665 - RU for Grid and database home.
+Patch 34411846 - OJVM for Database home .
+
+
+Grid 23 ai Upgrade requirment :
+-------------------------------
+Grid Infrastructure and Database 23ai requires Exadata version 24.1 or higher.  Exadata smart scan functionality for all Database 23ai 
+features is available starting in Exadata 24.1.  See Features Coupled with Oracle Database 23ai in the Oracle Exadata Database Machine System Overview document for details.
+
+To upgrade an existing Exadata system to Grid Infrastructure/Database 23ai:
+
+Note: Grid Infrastructure 23ai supports Database 19c and higher.
+Upgrade Exadata software to 24.1 or higher
+Upgrade database(s) running earlier releases to Database 19c
+Upgrade Grid Infrastructure to 23ai
+Upgrade database(s) to 23ai or create new 23ai database(s)
+
+
+Production :
+=============
+Compute Node Prod :
+--------------------
+[root@oraexa01db01 ~]# dcli -l root -g /root/dbs_group 'imageinfo | grep "Image version"'
+oraexa01db02: Image version: 22.1.22.0.0.240410.1
+oraexa01db01: Image version: 22.1.22.0.0.240410.1
+
+Storage Server :
+--------------------
+[root@oraexa01db01 ~]# dcli -l root -g /root/cell_group 'imageinfo | grep "Active image version"'
+oraexa01celadm01: Active image version: 22.1.22.0.0.240410.1
+oraexa01celadm02: Active image version: 22.1.22.0.0.240410.1
+oraexa01celadm03: Active image version: 22.1.22.0.0.240410.1
+
+Roce Switches :
+===============
+Prod :
+oraexa01sw-rocea0# show version | grep "System version"
+  System version: 7.0(3)I7(9)
+
+oraexa01sw-roceb0# show version | grep "System version"
+  System version: 7.0(3)I7(9)
+
+GI and DB verison : 
+--------------------
+GI Version : 19.23.0.0.0
+DB Version : 19.23.0.0.0
+
+Standby side :
+#################
+
+Compute Node : 
+---------------
+[root@oraexa02db01 ~]# dcli -l root -g /root/dbs_group 'imageinfo | grep "Image version"'
+oraexa02db01: Image version: 22.1.22.0.0.240410.1
+oraexa02db02: Image version: 22.1.22.0.0.240410.1
+
+Storage Server :
+--------------------
+[root@oraexa02db01 ~]# dcli -l root -g /root/cell_group 'imageinfo | grep "Active image version"'
+oraexa02celadm01: Active image version: 22.1.22.0.0.240410.1
+oraexa02celadm02: Active image version: 22.1.22.0.0.240410.1
+oraexa02celadm03: Active image version: 22.1.22.0.0.240410.1
+oraexa02celadm04: Active image version: 22.1.22.0.0.240410.1
+oraexa02celadm05: Active image version: 22.1.22.0.0.240410.1
+oraexa02celadm06: Active image version: 22.1.22.0.0.240410.1
+
+Roce Switches :
+===============
+oraexa02sw-rocea0# show version | grep "System version"
+System version: 10.2(4)
+
+oraexa02sw-roceb0# show version | grep "System version"
+System version: 10.2(4)
+
+
+As Roce swithc version is not getting updated we are not going to do patching for the Roce switches .
+
+GI and DB verison : 
+--------------------
+GI Version : 19.23.0.0.0
+DB Version : 19.23.0.0.0
+
+
+
+
+Bugs applicable for the exadata if we upgrade the version : 
+===========================================================
+(EX92) ILOM reset can cause IO timeouts or failed disks that can result in disk group dismount (Doc ID 3064000.1)
+We are not affected by this bug as our hardware is on X8m and abouve bug is for the X10m
+
+
+
+Custom Packages installed on the server :
+RPM Download center : 
+https://oss.oracle.com/sources/
+
+https://public-yum.oracle.com/oracle-linux-8.html
+#################################################################################
+# File initialized at 210924_062002 (runid :210924061826) by dbnodeupdate.sh 23.231215
+# NOTE: This list contains rpms which are seen as custom rpms
+#################################################################################
+qpdf-libs.x86_64
+libglvnd.x86_64
+libglvnd-glx.x86_64
+openjpeg2.x86_64
+telnet.x86_64
+VRTSnbjava.x86_64
+perl-Error.noarch
+urw-base35-fonts-common.noarch
+adobe-mappings-cmap-deprecated.noarch
+dejavu-sans-fonts.noarch
+libwayland-client.x86_64
+VRTSpbx.x86_64
+purgelogs.x86_64
+fontpackages-filesystem.noarch
+adobe-mappings-cmap.noarch
+dejavu-fonts-common.noarch
+libglvnd-egl.x86_64
+avahi-glib.x86_64
+VRTSnbclt.x86_64
+VRTSnbcfg.x86_64
+perl-Git.noarch
+lcms2.x86_64
+mesa-libglapi.x86_64
+openjpeg-libs.x86_64
+liberation-fonts-common.noarch
+poppler-data.noarch
+mesa-libEGL.x86_64
+VRTSnbjre.x86_64
+mesa-libgbm.x86_64
+libpaper.x86_64
+VRTSnbpck.x86_64
+cifs-utils.x86_64
+libwayland-server.x86_64
+libXdamage.x86_64
+libfontenc.x86_64
+adobe-mappings-pdf.noarch
+iotop.noarch
+VRTSpddea.x86_64
+git.x86_64
+libxshmfence.x86_64
+xorg-x11-server-utils.x86_64
+liberation-mono-fonts.noarch
+poppler.x86_64
+
+
+
+
+ ./patchmgr -dbnodes dbs_group -precheck -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 -allow_active_network_mounts
+ 
+ 
+I have checked the below are the packges installed for the Netbackup : 
+https://www.veritas.com/support/en_US/article.100033533
+https://www.veritas.com/support/en_US/article.100055465
+VRTSpddea.x86_64
+VRTSnbclt.x86_64
+VRTSpbx.x86_64
+VRTSnbcfg.x86_64
+VRTSnbpck.x86_64
+VRTSnbclibs.x86_64
+
+
+Below is installed for the trace and audit log deletion :
+purgelogs.x86_64
+purgeLogs: Archive & Cleanup traces, logs in one command (Doc ID 2081655.1)
+
+
+I am thinking below packages are releated to some fonts and character . Not sure we are using this or not .
+dejavu-sans-fonts.noarch
+dejavu-fonts-common.noarch
+
+https://linux-packages.com/centos-7/package/dejavu-sans-fontsnoarch
+https://linux-packages.com/oracle-linux-8/package/dejavu-fonts-commonnoarch
+
+
+xorg-x11-apps.x86_64
+https://yum.oracle.com/repo/OracleLinux/OL8/codeready/builder/x86_64/getPackage/xorg-x11-apps-7.7-21.el8.x86_64.rpm
+
+fontpackages-filesystem.noarch
+
+pcre2.x86_64
+
+cifs-utils.x86_64  => Used
+
+libfontenc.x86_64
+nginx.x86_64  => its not required now 
+http://nginx.org/packages/rhel/8/x86_64/RPMS/
+
+Compute non prod
+22.1.22.0.0.240410.1
+Cell Non Prod 
+22.1.22.0.0.240410.1
+
+Compute Prod : 
+
+Cell Prod 
+22.1.22.0.0.240410.1
+
+Checkes for 25.1.1.0.0 : 
+========================
+oraexa02sw-roceb0 / oraexa02sw-rocea0  :
+System version: 10.2(4)
+
+GI and DB verison : 
+--------------------
+GI Version : 19.23.0.0.0
+DB Version : 19.23.0.0.0
+
+25.1.1.0.0EXARU  => No bugs checked from Oracle Exadata: Exadata and Linux Important Recommended Fixes (Doc ID 556.1)
+
+Exadata System Software 25.1.1.0.0 Update (37462699) (Doc ID 3062867.1)
+Patch 37462699 - Storage server software (25.1.1.0.0.250121)
+Patch 37381915 - Admin/RDMA network switch (10.3(6)) and InfiniBand network switch (2.2.17-2) software
+Patch 37381912 - Database server bare metal / KVM / Xen domU ULN exadata_dbserver_25.1.1.0.0_x86_64_base OL8 channel ISO image (25.1.1.0.0.250121)
+Patch 37381913 - Database server Xen dom0 ULN exadata_dbserver_dom0_25.1.1.0.0_x86_64_base OVM channel ISO image (25.1.1.0.0.250121)
+
+Software Release Requirements
+Exadata Storage Server Software 25.1.1.0.0 supports the following Oracle Database software releases:
+
+Oracle Grid Infrastructure:
+Long Term Release 23ai, 23.5.0.24.07 and later
+Long Term Release 19c, GI Release Update (RU) 19.23.0.0.240416 and later
+Oracle Database:
+Long Term Release 23ai, 23.5.0.24.07 and later
+Long Term Release 19c, GI Release Update (RU) 19.21.0.0.231017 and later
+Additional supported Innovation releases or releases under Market Driven Support or Quarterly Updates exception approval:
+
+Oracle Database
+Release 18c, GI RU 18.14.0.0.210420 and later
+Release 12.2.0.1, GI RU 12.2.0.1.240716 and later
+Release 12.1.0.2, Database Proactive Bundle Patch 12.1.0.2.240716 and later
+Release 11.2.0.4, Quarterly Database Patch for Exadata 11.2.0.4.210119 and later
+
+Patching preparation steps :
+==============================
+To check the version of the rocea switch:
+ssh admin@oraexa02sw-rocea0 show version
+
+Current Rocea switch version :
+
+ System version: 7.0(3)I7(9)
+
+April 2022 contain the Rocea switch patch version  => 7.0(3)I7(9))  which is the same we currently have so there is no need to update the Roce switch.
+
+We are going on the below version as per April QFDP : (Below details we will get in 888828.1 ==> QFSDP contain the exadata software release 
+patch number => search for that number under Exadata software => Exadata 21 (Supplimental readme check for GI and DB support))
+
+We are going on the below version as per April QFDP :
+Patch 34071125 - Storage server software (21.2.11.0.0.220414.1)
+Patch 33958668 - Admin/RDMA network switch (7.0(3)I7(9)) and InfiniBand network switch (2.2.16-3) software
+Patch 33958669 - Database server bare metal / KVM / Xen domU ULN exadata_dbserver_21.2.11.0.0_x86_64_base OL7 channel ISO image (21.2.11.0.0.220414.1)
+
+We are fine with the minimum software version required for the Exadata Storage Server Software :  ( Check the suplimental read me )
+Exadata Storage Server Software 21.2.11.0.0 supports the following minimum Oracle Grid Infrastructure and Database software releases:
+
+Oracle Grid Infrastructure:
+19.4.0.0.0.190716 *
+Oracle Database:
+18.7.0.0.0.190716 *
+
+Our current GI version is => 19.14.0.0.0 
+Our current DB version is => 18.10.0.0.1
+
+We are going to apply the patch for the GI only not the database as the database is out of support now and April 2022 patch is not available for this .
+
+
+Check for Exadata version upgrade rule :
+Product version and date code both should be higher than the existing version.
+Current version => 21.2.11.0.0.220414.1
+Upgrade to => 21.3.11.0.0.220714.1  => Good 
+Upgrade to => 21.1.11.0.0.220714.1  => Not Good   (Product code issue)
+Upgrade to => 21.3.11.0.0.220114.1  => Not Good  (Date code issue)
+
+Passwordless SSH user connection from the first compute node to all the storage and compute node and switches.
+1. With root user for the Storage and Compute nodes
+2. With non-root user for the Switches.
+
+
+Directory creation :
+====================
+1. Copy the patch from Oracle to /NetBackup/TEMP_PATCH/OCT_QFSDP  directory .
+2. Unzip the patch.
+for I in `ls p37262628_210000_Linux-x86-64_*10.zip`
+do
+unzip $I
+done
+
+p37262628_210000_Linux-x86-64_10of10.zip
+
+3. Untar the tar file :
+
+cat *.tar.* | tar -xvf -
+
+[root@oraexa02db01 19.17.0.0.221018OJVMRU]# cd /u01
+[root@oraexa01db01 u01]# mkdir JAN_QFSDP
+[root@oraexa01db01 u01]# cd JAN_QFSDP/
+[root@oraexa01db01 OCT_QFSDP]# ls -ltr
+total 0
+[root@oraexa01db01 OCT_QFSDP]# mkdir dbnode cell grid_patch
+[root@oraexa02db01 OCT_QFSDP]# chown oracle:oinstall grid_patch
+[root@oraexa02db01 OCT_QFSDP]# ls -ltr
+total 0
+drwxr-xr-x 3 root   root     117 Jan 13 05:13 dbnode
+drwxr-xr-x 3 root   root      79 Jan 13 05:31 cell
+drwxr-xr-x 4 oracle oinstall  32 Jan 13 06:03 grid_patch
+
+[root@oraexa02db01 19.17.0.0.0]# cd /u01/JAN_QFSDP/grid_patch
+[root@oraexa02db01 grid_patch]# mkdir GIRU OJVMRU ; chown oracle:oinstall GIRU OJVMRU
+
+[root@oraexa02db01 grid_patch]# pwd
+/u01/OCT_QFSDP/grid_patch
+
+Grid and db patching:
+=====================
+
+Copy and unzip GIRU Patch as Oracle user :
+[oracle@oraexa02db01 grid_patch]# cp /NetBackup/TEMP_PATCH/OCT_QFSDP/34538883/Database/19.17.0.0.0/19.17.0.0.221018GIRU/p34416665_190000_Linux-x86-64.zip /u01/JAN_QFSDP/grid_patch/GIRU
+
+[oracle@oraexa02db01 grid_patch]$ cd /u01/OCT_QFSDP/grid_patch/GIRU
+[oracle@oraexa02db01 GIRU]$ ll
+total 2549652
+-rw-r--r-- 1 oracle oinstall 2610842279 Jan 13 06:07 p34416665_190000_Linux-x86-64.zip
+[oracle@oraexa02db01 GIRU]$ unzip p34416665_190000_Linux-x86-64.zip
+
+Copy and unzip OJVM Patch as Oracle user :
+[oracle@oraexa02db01 grid_patch]# cp /NetBackup/TEMP_PATCH/OCT_QFSDP/34538883/Database/19.17.0.0.0/19.17.0.0.221018OJVMRU/p34411846_190000_Linux-x86-64.zip /u01/JAN_QFSDP/grid_patch/OJVMRU/.
+
+[oracle@oraexa02db01 grid_patch]$ cd OJVMRU/
+[oracle@oraexa02db01 OJVMRU]$ ll
+total 122956
+-rw-r--r-- 1 oracle oinstall 125903925 Jan 13 06:08 p34411846_190000_Linux-x86-64.zip
+[oracle@oraexa02db01 OJVMRU]$ unzip p34411846_190000_Linux-x86-64.zip
+
+New way for compute node patching using patchmgr :
+==================================================
+[root@oraexa02db01 dbnode]# cd /NetBackup/TEMP_PATCH/JAN_QFSDP/34538883/Infrastructure/SoftwareMaintenanceTools/DBServerPatch/221022
+[root@oraexa02db01 221022]# ls
+p21634633_221300_Linux-x86-64.zip  README.txt
+
+[root@oraexa02db01 221022]# cp p21634633_221300_Linux-x86-64.zip /u01/JAN_QFSDP/dbnode/.
+
+[root@oraexa02db01 221022]#   
+[root@oraexa02db01 dbnode]# ls -ltr
+total 544452
+-rw-r--r-- 1 root root 557515874 Jan 13 05:04 p21634633_221300_Linux-x86-64.zip
+
+[root@oraexa02db01 dbnode]# unzip p21634633_221300_Linux-x86-64.zip
+Archive:  p21634633_221300_Linux-x86-64.zip
+
+[root@oraexa02db01 dbnode]# ls -ltr
+total 544456
+drwxrwxr-x 3 root root      4096 Oct 22 23:48 dbserver_patch_221022
+
+Copy of the ISO file :
+---------------------
+[root@oraexa02db01 ExadataDatabaseServer_OL7]# cd /NetBackup/TEMP_PATCH/JAN_QFSDP/35077527/Infrastructure/22.1.10.0.0/ExadataDatabaseServer_OL7
+[root@oraexa02db01 ExadataDatabaseServer_OL7]# pwd
+/NetBackup/TEMP_PATCH/JAN_QFSDP/35077527/Infrastructure/22.1.10.0.0/ExadataDatabaseServer_OL7
+
+[root@oraexa02db01 ExadataDatabaseServer_OL7]# ls -ltr
+total 1827552
+-rw-r--r-- 1 1458713 dba     838145 Apr 28 08:21 README.html
+-rw-r--r-- 1 1458713 dba 1870558660 Apr 28 08:22 p35129585_221000_Linux-x86-64.zip
+
+[root@oraexa02db01 ExadataDatabaseServer_OL7]# cp p36065642_221000_Linux-x86-64.zip /u01/JAN_QFSDP/dbnode/.
+
+[root@oraexa02db01 ExadataDatabaseServer_OL7]# cd /u01/JAN_QFSDP/dbnode/.
+[root@oraexa02db01 dbnode]# ls -ltr
+total 2376044
+drwxrwxr-x 3 root root       4096 Apr 18 20:11 dbserver_patch_230418
+-rw-r--r-- 1 root root  562496506 Jun 28 09:34 p21634633_231100_Linux-x86-64.zip
+-rw------- 1 root root       1421 Jun 28 09:35 nohup.out
+-rw-r--r-- 1 root root 1870558660 Jun 28 11:39 p35129585_221000_Linux-x86-64.zip
+
+
+[root@oraexa02db01 dbnode]# ls -ltr p34574395_212000_Linux-x86-64.zip
+-rw-r--r-- 1 root root 1504535534 Jan 13 05:13 p34574395_212000_Linux-x86-64.zip
+
+Prepare the dbs_group files 
+Node 1 :
+[root@oraexa02db01 dbserver_patch_221022]# cat dbs_group
+oraexa02db02
+[root@oraexa02db01 dbserver_patch_221022]# pwd
+/u01/OCT_QFSDP/dbnode/dbserver_patch_221022
+
+Node 2 :
+[root@oraexa02db02 dbserver_patch_221022]# cat dbs_group
+oraexa02db01
+[root@oraexa02db02 dbserver_patch_221022]# pwd
+/u01/OCT_QFSDP/dbnode/dbserver_patch_221022
+
+
+Storage node :
+==============
+[root@oraexa02db01 ExadataStorageServer_InfiniBandSwitch]# cd /NetBackup/TEMP_PATCH/OCT_QFSDP/34538883/Infrastructure/21.2.17.0.0/ExadataStorageServer_InfiniBandSwitch
+
+[root@oraexa02db01 ExadataStorageServerPatch]# pwd
+/NetBackup/TEMP_PATCH/JAN_QFSDP/35077527/Infrastructure/22.1.10.0.0/ExadataStorageServerPatch
+[root@oraexa02db01 ExadataStorageServerPatch]# ls -ltr
+total 1522688
+-rw-r--r-- 1 1458713 dba     839563 Apr 28 08:21 README.html
+-rw-r--r-- 1 1458713 dba 1558369423 Apr 28 08:21 p35277259_221000_Linux-x86-64.zip
+
+[root@oraexa02db01 ExadataStorageServerPatch]# cp p35277259_221000_Linux-x86-64.zip /u01/JAN_QFSDP/cell/.
+[root@oraexa02db01 ExadataStorageServerPatch]# cd /u01/JAN_QFSDP/cell/
+[root@oraexa02db01 cell]# ls -ltr
+total 1521848
+-rw-r--r-- 1 root root 1558369423 Jun 28 11:51 p35277259_221000_Linux-x86-64.zip
+[root@oraexa02db01 cell]# nohup unzip p35277259_221000_Linux-x86-64.zip &
+[1] 127343
+[root@oraexa02db01 cell]# nohup: ignoring input and appending output to ‘nohup.out’
+
+[root@oraexa02db01 cell]# ls -ltr
+total 1521856
+-rw-r--r-- 1 root root 1558369423 Jun 28 11:51 p35277259_221000_Linux-x86-64.zip
+drwxrwxr-x 4 root root       4096 Jun 28 11:52 patch_22.1.10.0.0.230422
+-rw------- 1 root root       1094 Jun 28 11:52 nohup.out
+
+Need to copy cell_group file .
+cd 
+cp cell_group /u01/JAN_QFSDP/cell/patch_21.2.17.0.0.221020
+[oracle@oraexa02db01 patch_21.2.17.0.0.221020]$ cat cell_group
+oraexa02celadm01
+oraexa02celadm02
+oraexa02celadm03
+
+Roce Switches :
+================
+AS root user :
+
+cd /u01/JAN_QFSDP
+mkdir ROCE
+chown oracle:oinstall ROCE
+chmod 777 -R ROCE
+cd /NetBackup/TEMP_PATCH/JAN_QFSDP/35077527/Infrastructure/22.1.10.0.0/FabricSwitch
+[root@oraexa02db01 FabricSwitch]# ls -ltr
+total 3979200
+-rwxr-xr-x 1 1458713 dba         955 Apr 28 08:21 README.txt
+-rw-r--r-- 1 1458713 dba  4074648091 Apr 28 08:21 p35129587_221000_Linux-x86-64.zip
+
+[root@oraexa02db01 FabricSwitch]# cp p35129587_221000_Linux-x86-64.zip /u01/JAN_QFSDP/ROCE/.
+[root@oraexa02db01 FabricSwitch]# cd /u01/JAN_QFSDP/ROCE/.
+[root@oraexa02db01 ROCE]# ll
+total 3979152
+-rw-r--r-- 1 root root 4074648091 Jun 30 10:12 p35129587_221000_Linux-x86-64.zip
+[root@oraexa02db01 ROCE]# chown oracle:oinstall p35129587_221000_Linux-x86-64.zip
+[root@oraexa02db01 ROCE]# chmod 777 -R p35129587_221000_Linux-x86-64.zip
+root@oraexa02db01 ROCE]# su - oracle
+
+As oracle user :
+
+cd /u01/JAN_QFSDP/ROCE
+[oracle@oraexa02db01 ROCE]$ ll
+-rwxrwxrwx 1 oracle oinstall 4074648091 Jun 30 10:12 p35129587_221000_Linux-x86-64.zip
+
+[oracle@oraexa02db01 ROCE]$ unzip p35129587_221000_Linux-x86-64.zip
+[oracle@oraexa02db01 ROCE]$ cd /u01/JAN_QFSDP/ROCE/patch_switch_22.1.10.0.0.230422
+[oracle@oraexa02db01 ROCE]# vi roce_list
+oraexa02sw-rocea0.sportski.com
+oraexa02sw-roceb0.sportski.com
+
+Do below depending on the value of the 
+cp roce_list to /home/oracle/.
+
+
+Backup :
+Check for the database backup is completed successfully and we have archivelogs present.
+Take the backup of the snmp file mail server was not working so need to take backup .
+
+Take the backup of the Grid and Oracle home and inventory file 
+While upgrading the Storage server node we are updating :
+Oracle Linux Operating system 
+Firmware (Flash / Disk /ILOM / Raid  controller)
+Exadata software secrate sause
+
+
+While upgrading the Storage server node we are updating :
+Oracle Linux Operating system 
+Firmware (Flash / Disk /ILOM / Raid  controller)
+Exadata software secrate sause
+
+
+==================
+Patching precheck :
+===================
+===================
+
+Precheck of patching :
+======================
+Verify the backup completed and fine for prod database: SASX1
+Comment the crontab .
+
+dcli -l root -g /root/dbs_group 'ps -ef|grep pmon|grep -v grep'
+dcli -l root -g /root/dbs_group '/u01/app/12.2.0.0/grid/bin/crsctl check crs'
+dcli -l root -g /root/dbs_group 'ps -ef|grep tns'
+dcli -l root -g /root/dbs_group 'ps -ef|grep diskmon'
+dcli -l root -g /root/dbs_group '/u01/app/12.2.0.0/grid/bin/crsctl status resource -t'
+dcli -l root -g /root/all_group "ipmitool sunoem cli \"show faulty \""
+dcli -l root -g /root/dbs_group 'imageinfo '
+dcli -l root -g /root/cell_group 'imageinfo'
+dcli -l root -g /root/dbs_group 'imageinfo | grep "image version"'
+dcli -l root -g /root/cell_group 'imageinfo | grep "image version"'
+dcli -l root -g /root/cell_group  "service celld status"
+dcli -l root -g /root/cell_group "cellcli -e list cell"
+dcli -l root -g /root/cell_group "cellcli -e list celldisk"
+dcli -l root -g /root/cell_group "cellcli -e list griddisk"
+dcli -l root -g /root/cell_group 'cellcli -e "list griddisk attributes name,status,asmmodestatus,asmdeactivationoutcome"'
+dcli -l root -g /root/cell_group 'cellcli -e "list griddisk attributes name"| cut -d"_" -f1-2 | uniq -c'
+dcli -l root -g /root/dbs_group 'df -h'
+dcli -l root -g /root/dbs_group 'cat /etc/fstab'
+BLACKOUT in OEM.
+Unmount the filesystem before the patching :
+Cat mount_cifs from this unmount all the directory and check using df -h
+
+https://linuxize.com/post/how-to-mount-and-unmount-file-systems-in-linux/
+
+First node grid home backup  :
+tar -czf /u01/inoapps_backup_CVE/sqldeveloper_bkp_feb2022.tar.gz ./sqldeveloper
+Second node grid home backup :
+tar -czvf /u01/JAN_QFSDP/GI_home_bkp_apr2022.tar.gz /u01/app/12.2.0.0/grid
+Check in the oem for the down target . Take the screen shot.
+Comment the crontab job
+
+POST Check :
+============
+Reinstall the SAMBA package on both the node :
+rpm -ivh samba-client-4.10.16-15.el7_9.x86_64.rpm --nodeps
+
+Mount the filesystem on both the node :
+cd /root
+./mount_cifs.sh
+
+dcli -l root -g /root/dbs_group 'ps -ef|grep pmon|grep -v grep'
+dcli -l root -g /root/dbs_group 'ps -ef|grep d.bin|grep -v grep'
+dcli -l root -g /root/dbs_group '/u01/app/12.2.0.0/grid/bin/crsctl check crs'
+dcli -l root -g /root/dbs_group 'ps -ef|grep tns'
+dcli -l root -g /root/dbs_group 'ps -ef|grep diskmon'
+dcli -l root -g /root/dbs_group '/u01/app/12.2.0.0/grid/bin/crsctl status resource -t'
+dcli -l root -g /root/all_group "ipmitool sunoem cli \"show faulty \""
+dcli -l root -g /root/dbs_group 'imageinfo '
+dcli -l root -g /root/cell_group 'imageinfo'  
+dcli -l root -g /root/dbs_group 'imageinfo | grep "image version"'
+dcli -l root -g /root/cell_group 'imageinfo | grep "image version"'
+dcli -l root -g /root/cell_group  "service celld status"
+dcli -l root -g /root/cell_group "cellcli -e list cell"
+dcli -l root -g /root/cell_group "cellcli -e list celldisk"
+dcli -l root -g /root/cell_group "cellcli -e list griddisk"
+dcli -l root -g /root/cell_group 'cellcli -e "list griddisk attributes name,status,asmmodestatus,asmdeactivationoutcome"'
+dcli -l root -g /root/cell_group 'cellcli -e "list griddisk attributes name"| cut -d"_" -f1-2 | uniq -c'
+dcli -l root -g /root/dbs_group 'df -h'
+dcli -l root -g /root/dbs_group 'cat /etc/fstab'
+
+Remove blackout from OEM.
+uncomment the crontab .
+Check for the primary and standby database sync 
+Screenshot check for the down target in the OEM.
+
+IF we found that the scan listener is showing down in the OEM then we need to relocat it to the other node and check the status.
+srvctl relocate scan_LISTENER -i 1 -n oraexa02db02
+srvctl relocate scan_LISTENER -i 2 -n oraexa02db01
+
+========================
+Compute Node Patching :
+========================
+========================
+
+
+
+Patching steps for the Compute nodes :
+#######################################
+Before Starting Patching :
+==========================
+Both the node stop emctl . 
+[oracle@oraexa01db01 emcli]$ cd /u01/app/oracle/product/agent13c/agent_inst/bin
+[oracle@oraexa01db01 bin]$ ./emctl status agent
+[oracle@oraexa01db01 bin]$ ./emctl stop agent
+[oracle@oraexa01db01 bin]$ ./emctl status agent
+
+1. Remove the conflicting rpms from both the nodes:
+
+rpm -e samba-client-4.10.16-15.el7_9.x86_64 --nodeps 
+rpm -q samba-client-4.10.16-15.el7_9.x86_64
+2. umount all nfs mount points :
+
+[root@oraexa02db01 patch_21.2.8.0.0.220114.1]# cat /proc/mounts | grep nfs
+stirling54.sportski.com:/shares/Prod_Exadata_Backup /NetBackup nfs rw,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,acregmin=0,acregmax=0,acdirmin=0,acdirmax=0,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=172.20.9.156,mountvers=3,mountport=20048,mountproto=tcp,local_lock=none,addr=172.20.9.156 0 0
+
+umount /NetBackup 
+
+Remove the crontab as well :
+crontab -l > crontab_27APR24
+
+Login to 1st compute node as root user :
+=========================================
+Login as root dont do sudo su - 
+
+1. Stop Crs service on the node 2 :
+ssh oraexa02db02    (As we are going to do patching on second node)
+cd /u01/app/12.2.0.0/grid/bin/
+./crsctl stop crs
+./crsctl disable crs
+
+2. Precheck :
+cd /u01/JAN_QFSDP/dbnode/
+[root@oraexa02db01 dbserver_patch_230418]# cat dbs_group
+oraexa02db02
+
+screen -S Patching_DBNode => To create screen 
+screen -ls => To list screen
+screen -r <Screen name> to attach to screen
+ctrl+A+D => To detach from the screen 
+exit => To exit from screen
+
+[root@oraexa02db01 dbserver_patch_241130]# ./patchmgr -dbnodes dbs_group -precheck -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 -allow_active_network_mounts
+[root@oraexa02db01 dbserver_patch_241130]# ./patchmgr -dbnodes dbs_group -precheck -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 
+
+3. Patching :
+[root@oraexa02db01 dbserver_patch_241130]# ./patchmgr -dbnodes dbs_group -upgrade -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 
+
+4. Post checks:
+Loging to node 2nd and do 
+dcli -l root -g /root/dbs_group 'imagehistory'
+dcli -l root -g /root/dbs_group 'imageinfo'
+dcli -l root -g /root/dbs_group 'ps -ef|grep pmon'
+
+Login to 2nd compute node as root user :
+=========================================
+Login as root dont do sudo su - 
+1. Stop Crs service on the node 1 :
+ssh oraexa02db01    (As we are going to do patching on first node)
+cd /u01/app/12.2.0.0/grid/bin/
+./crsctl stop crs
+./crsctl disable crs
+
+screen -S Patching_precheck => To create screen 
+screen -ls => To list screen
+screen -r <Screen name> to attach to screen
+ctrl+A+D => To detach from the screen 
+exit => To exit from screen
+
+2. Precheck 
+cd /u01/APR_QFSDP/dbnode/dbserver_patch_230418
+[root@oraexa02db02 dbserver_patch_231215]# cat dbs_group
+oraexa02db01
+
+[root@oraexa02db01 dbserver_patch_241130]# ./patchmgr -dbnodes dbs_group -precheck -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 -allow_active_network_mounts
+[root@oraexa02db01 dbserver_patch_241130]# ./patchmgr -dbnodes dbs_group -precheck -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 
+
+3. Patching :
+[root@oraexa02db01 dbserver_patch_241130]# ./patchmgr -dbnodes dbs_group -upgrade -iso_repo /u01/OCT_QFSDP/dbnode/p36597733_251000_Linux-x86-64.zip -target_version 25.1.0.0.0.241130 
+
+tail -f nohup_patch_Node1_190123.out
+
+4. Post checks:
+Loging to node 1st and do 
+dcli -l root -g /root/dbs_group 'imagehistory'
+dcli -l root -g /root/dbs_group 'imageinfo'
+dcli -l root -g /root/dbs_group 'ps -ef|grep pmon'
+
+
+
+Rollback:
+=========
+
+Here is the procedure that can be found in the readme to rollback a database node.
+
+Check the version of each DB node before the rollback :
+[root@myclusterdb01 ~]# dcli -g ~/dbs_group -l root imageinfo -ver
+Umount the NFS :
+You can generate all the umount commands with this command:
+
+df -t nfs | awk '{if ($NF ~ /^\//){print "umount " $NF}}'
+
+Rollback the patch (launch it from the cel01 server) :
+[root@myclustercel01 ~]# cd /tmp/dbserver_patch_5.161110
+[root@myclustercel01 dbserver_patch_5.161110]# ./patchmgr -dbnodes ~/dbs_group -rollback -iso_repo /tmp/p24669306_121233_Linux-x86-64.zip -target_version <previous the='' of='' version='' installed='' patch=''> -rolling
+
+Check the version of each DB node after the rollback:
+[root@myclusterdb01 ~]# dcli -g ~/dbs_group -l root imageinfo -ver
+
+./patchmgr -dbnodes dbs_group -precheck -iso_repo /u01/JAN_QFSDP/dbnode/p37381912_251000_Linux-x86-64.zip -target_version 25.1.1.0.0.250121 -allow_active_network_mounts
+
+======================
+Roce Switches PAtch :
+=====================
+=====================
+
+
+Pathing ROCE Switches :
+========================
+oraexa01sw-rocea0
+oraexa01sw-roceb0
+Non Root user so user Oracle user to do below :
+Login to oraexa01db01 
+
+Precheck :
+cd /u01/APR_QFSDP/ROCE/patch_switch_22.1.10.0.0.230422
+./patchmgr --roceswitches ~/roce_list --upgrade --roceswitch-precheck --log_dir /u01/APR_QFSDP/ROCE/log
+
+Patching :
+./patchmgr --roceswitches ~/roce_list --upgrade --log_dir /u01/APR_QFSDP/ROCE/log
+
+Postcheck :
+ssh admin@oraexa01sw-rocea0 show version | grep "System version:"
+ssh admin@oraexa01sw-roceb0 show version | grep "System version:"
+
+
+
+Rollback :
+./patchmgr --roceswitches roce_list --downgrade –-roceswitch-precheck –-log_dir /u01/APR_QFSDP/ROCE/log
+  ./patchmgr --roceswitches roce_list --downgrade  –-log_dir /u01/APR_QFSDP/ROCE/log
+
+
+===========================
+Storage Server Patching : 
+===========================
+=============================
+################## Verify status of DB and cluster
+dcli -l root -g /root/dbs_group 'ps -ef|grep pmon|grep -v grep'
+dcli -l root -g /root/dbs_group 'ps -ef|grep d.bin|grep -v grep'
+dcli -l root -g /root/dbs_group '/u01/app/12.2.0.0/grid/bin/crsctl check crs'
+dcli -l root -g /root/dbs_group 'ps -ef|grep tns'
+dcli -l root -g /root/dbs_group 'ps -ef|grep diskmon'
+dcli -l root -g /root/dbs_group '/u01/app/12.2.0.0/grid/bin/crsctl status resource -t -w "TYPE = ora.database.type"'
+
+################# Check if ILOM are up
+dcli -l root -g /root/all_group "ipmitool sunoem cli \"show faulty \""
+
+################# Precheks:
+
+dcli -l root -g /root/cell_group 'imageinfo | grep "image version"'
+dcli -l root -g /root/cell_group  "service celld status"
+dcli -l root -g /root/cell_group "cellcli -e list cell"
+dcli -l root -g /root/cell_group "cellcli -e list celldisk"
+dcli -l root -g /root/cell_group "cellcli -e list griddisk"
+dcli -l root -g /root/cell_group 'cellcli -e "list griddisk attributes name,status,asmmodestatus,asmdeactivationoutcome"'
+dcli -l root -g /root/cell_group 'cellcli -e "list griddisk attributes name"| cut -d"_" -f1-2 | uniq -c'
+
+After doing of the ilom reset we need to check again : 
+6.Check faulty status
+dcli -l root -g /root/cell_group "ipmitool sunoem cli \"show faulty \""
+
+7.
+dcli -g cell_group -l root "service celld status"
+dcli -l root -g /opt/oracle.SupportTools/onecommand/cell_group 'imageinfo | grep "image version"'
+dcli -l root -g /opt/oracle.SupportTools/onecommand/cell_group 'cellcli -e "list griddisk attributes name,status,asmmodestatus,asmdeactivationoutcome"'
+dcli -l root -g /opt/oracle.SupportTools/onecommand/cell_group 'cellcli -e "list griddisk attributes name"| cut -d"_" -f1-2 | uniq -c'
+
+################### Cell node oraexa02celadm01,oraexa02celadm02,oraexa02celadm03 actual patching 
+
+dcli -l root -g /root/cell_group "ipmitool sunoem cli \"show faulty \""
+
+cd /u01/OCT_QFSDP/cell/patch_21.2.17.0.0.221020
+cat cell_group
+dcli -l root -g cell_group " uptime"
+
+./patchmgr -cells cell_group -reset_force
+./patchmgr -cells cell_group -cleanup
+./patchmgr -cells cell_group -patch_check_prereq -rolling
+
+
+nohup ./patchmgr -cells cell_group -patch -rolling  &
+
+cd /u01/OCT_QFSDP/cell/patch_21.2.17.0.0.221020
+./patchmgr -cells /root/cell_group -cleanup
+
+##################  Post check for Cell nodes 
+dcli -l root -g cell_group " imageinfo"
+dcli -l root -g cell_group " imageinfo"|grep ' Active image version'
+dcli -l root -g cell_group " imagehistory"
+dcli -l root -g cell_group " service celld status "
+dcli -l root -g cell_group " cellcli -e list griddisk "
+dcli -l root -g cell_group "cellcli -e list celldisk"
+dcli -l root -g cell_group " ipmitool sunoem cli \"show faulty \""
+dcli -l root -g cell_group 'cellcli -e "list griddisk attributes name"| cut -d"_" -f1-2 | uniq -c'
+
+##############################################################################################################################
+###################  Rollback :
+
+We can read in the readme that it is only possible to rollback a successfully-updated Exadata Cells. Cells with incomplete or failed updates cannot be rolled back.
+
+Check the version cells will be rolled back to and the flashCacheMode setting with the following commands :
+[root@myclusterdb01 ~]# dcli -l root -g cell_group imageinfo -ver -inactive
+[root@myclusterdb01 ~]# dcli -l root -g cell_group cellcli -e 'list cell attributes flashCacheMode'
+
+Cells being rolled back to releases earlier than release 11.2.3.2.0 with write back flash cache enabled need to be converted manually back to write through 
+flash cache before being rolled back. Disable write back flash cache using the script in My Oracle Support note 1500257.1.
+Cells being rolled back to release 11.2.3.2.0 or later retain the flash cache mode that is currently set.
+
+[root@myclusterdb01 ~]# ./patchmgr -cells cell_group -rollback_check_prereq -rolling
+[root@myclusterdb01 ~]# ./patchmgr -cells cell_group -rollback -rolling
+
+Clean up the cells using the -cleanup option to clean up all the temporary update or rollback files on the cells. This option cleans the stale update and 
+rollback states as well as cleaning up to 1.5 GB of disk space on the cells. Use this option before retrying a halted or failed run of the patchmgr utility :
+
+[root@myclusterdb01 ~]# ./patchmgr -cells cell_group -cleanup
+
+
+
+Samba Package download link:
+https://yum.oracle.com/repo/OracleLinux/OL7/latest/x86_64/index.html
+
+
+
+GI and DB Patch :
+================
+
+Patch 35037840 - GI Release Update 19.19.0.0.230418
+Patch 35050341 - Oracle JavaVM Component Release Update 19.19.0.0.230418
+OPatch utility version 12.2.0.1.36 or later to apply this patch
+When patching the Grid home, a shared location on Oracle ACFS only needs to be unmounted on the node where the Grid home is being patched.
+1494652.1 for unmounting Oracle ACFS file systems.
+
+1) GI and DB home RU patching :
+###############################
+
+/u01/app/12.2.0.0/grid
+/u01/app/oracle/product/19.0.0.0/dbhome_1
+/u01/app/oracle/product/19.0.0.0/dbhome_2
+/u01/app/oracle/product/19.0.0.0/dbhome_3
+
+RU Patch location : /u01/APR_QFSDP/grid_patch/GIRU/35037840
+OJVM Patch location : /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+
+Take the backup of the Grid and Oracle home and oracle inventory .
+
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node1_GI_home_bkp_July2023.tar.gz /u01/app/12.2.0.0/grid &
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node1_DB_home1_bkp_July2023.tar.gz /u01/app/oracle/product/19.0.0.0/dbhome_1 &
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node1_DB_home2_bkp_July2023.tar.gz /u01/app/oracle/product/19.0.0.0/dbhome_2 &
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node1_DB_home3_bkp_July2023.tar.gz /u01/app/oracle/product/19.0.0.0/dbhome_3 &
+
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node2_GI_home_bkp_July2023.tar.gz /u01/app/12.2.0.0/grid &
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node2_DB_home1_bkp_July2023.tar.gz /u01/app/oracle/product/19.0.0.0/dbhome_1 &
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node2_DB_home2_bkp_July2023.tar.gz /u01/app/oracle/product/19.0.0.0/dbhome_2 &
+nohup tar -czvf /NetBackup/TEMP_PATCH/Node2_DB_home3_bkp_July2023.tar.gz /u01/app/oracle/product/19.0.0.0/dbhome_3 &
+
+cp -rp oraInventory /NetBackup/TEMP_PATCH/Node1_oraInventory_040823
+cp -rp oraInventory /NetBackup/TEMP_PATCH/Node2_oraInventory_040823
+
+screen -S Patching_DBNode => To create screen 
+screen -ls => To list screen
+screen -r <Screen name> to attach to screen
+ctrl+A+D => To detach from the screen 
+exit => To exit from screen
+
+As the Grid home user:
+
+/u01/app/12.2.0.0/grid/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35042068
+/u01/app/12.2.0.0/grid/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35050331
+/u01/app/12.2.0.0/grid/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35050325
+/u01/app/12.2.0.0/grid/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35107512
+/u01/app/12.2.0.0/grid/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/33575402
+
+For Oracle home, as home user:
+
+/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35042068
+/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35050331
+
+/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35042068
+/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35050331
+
+/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35042068
+/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -phBaseDir /u01/APR_QFSDP/grid_patch/GIRU/35037840/35050331
+
+cat /tmp/patch_list_gihome.txt
+
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/35042068
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/35050331
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/35050325
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/35107512
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/33575402
+/u01/app/12.2.0.0/grid/OPatch/opatch prereq CheckSystemSpace -phBaseFile /tmp/patch_list_gihome.txt
+
+cat /tmp/patch_list_dbhome.txt
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/35042068
+/u01/APR_QFSDP/grid_patch/GIRU/35037840/35050331
+/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch/opatch prereq CheckSystemSpace -phBaseFile /tmp/patch_list_dbhome.txt
+/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch/opatch prereq CheckSystemSpace -phBaseFile /tmp/patch_list_dbhome.txt
+/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch/opatch prereq CheckSystemSpace -phBaseFile /tmp/patch_list_dbhome.txt
+
+RU Patching :
+-------------
+Node 1 : 
+---------
+1) Precheck 
+export PATH=$PATH:/u01/app/12.2.0.0/grid/OPatch
+/u01/app/12.2.0.0/grid/OPatch/opatchauto apply /u01/APR_QFSDP/grid_patch/GIRU/35037840 -analyze
+
+2) Patch 
+/u01/app/12.2.0.0/grid/OPatch/opatchauto apply /u01/APR_QFSDP/grid_patch/GIRU/35037840
+
+3) Post Check :
+/u01/app/12.2.0.0/grid/OPatch/opatch lsinv | egrep -i "35050331|35050325|35107512|35042068|33575402"
+/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch/opatch lsinv | egrep -i "35042068|35050331"
+/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch/opatch lsinv | egrep -i "35042068|35050331"
+/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch/opatch lsinv | egrep -i "35042068|35050331"
+
+Node 2: 
+-------
+1) Precheck
+export PATH=$PATH:/u01/app/12.2.0.0/grid/OPatch
+
+/u01/app/12.2.0.0/grid/OPatch/opatchauto apply /u01/APR_QFSDP/grid_patch/GIRU/35037840 -analyze
+
+2) Patch 
+/u01/app/12.2.0.0/grid/OPatch/opatchauto apply /u01/APR_QFSDP/grid_patch/GIRU/35037840
+
+/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch/opatchauto apply /u01/APR_QFSDP/grid_patch/GIRU/35037840 -oh /u01/app/oracle/product/19.0.0.0/dbhome_2
+
+
+3) Post Check :
+/u01/app/12.2.0.0/grid/OPatch/opatch lsinv | egrep -i "35050331|35050325|35107512|35042068|33575402"
+/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch/opatch lsinv | egrep -i "35042068|35050331"
+/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch/opatch lsinv | egrep -i "35042068|35050331"
+
+/u01/app/12.2.0.0/grid/OPatch/opatchauto resume -oh /u01/app/12.2.0.0/grid
+
+
+OJVM Patching : 
+###############
+DBHOME 1 => /u01/app/oracle/product/19.0.0.0/dbhome_1
+-----------------------------------------------------
+OJVM Patch location : /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+
+1) Applying the Patch to new Oracle home :
+
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_1
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch
+
+2) Verify the Oracle Inventory
+	opatch lsinventory
+
+3) Determine whether any currently installed interim patches conflict with this patch 33808385 as shown as follows:
+
+$ cd /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+$ opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+4) For an Oracle RAC environment, shut down all the services (database, ASM, listeners, nodeapps, and CRS daemons) running from the Oracle home on 
+all the nodes you want to patch. 
+
+/u01/app/12.2.0.0/grid/bin/crsctl start crs 
+/u01/app/12.2.0.0/grid/bin/crsctl check crs
+ps -ef | grep -i pmon 
+ps -ef | grep -i tns
+ps -ef | grep -i d.bin
+
+5). Apply the patch
+
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_1
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch
+
+opatch prereq CheckActiveFilesAndExecutables -ph ./
+
+$ cd /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+opatch apply
+
+6) Verify the patch is applied :
+/u01/app/oracle/product/19.0.0.0/dbhome_1/OPatch/opatch lsinv | egrep -i "35050341"
+
+7) Execute the same steps on the second node once all the dbhome patching completed on node 1 .
+
+
+DBHOME 2 => /u01/app/oracle/product/19.0.0.0/dbhome_2
+-----------------------------------------------------
+OJVM Patch location : /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+
+1) Applying the Patch to new Oracle home :
+
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_2
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch
+
+2) Verify the Oracle Inventory
+	opatch lsinventory
+
+3) Determine whether any currently installed interim patches conflict with this patch 33808385 as shown as follows:
+
+$ cd /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+$ opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+4) For an Oracle RAC environment, shut down all the services (database, ASM, listeners, nodeapps, and CRS daemons) running from the Oracle home on 
+all the nodes you want to patch. 
+
+crsctl stop crs 
+ps -ef | grep -i pmon 
+ps -ef | grep -i tns
+ps -ef | grep -i d.bin
+
+5). Apply the patch
+
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_2
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch
+
+opatch prereq CheckActiveFilesAndExecutables -ph ./
+
+$ cd /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+opatch apply
+
+6) Verify the patch is applied :
+/u01/app/oracle/product/19.0.0.0/dbhome_2/OPatch/opatch lsinv | egrep -i "35050341"
+
+7) Execute the same steps on the second node once all the dbhome patching completed on node 1 .
+
+
+DBHOME 3 => /u01/app/oracle/product/19.0.0.0/dbhome_3
+-----------------------------------------------------
+
+OJVM Patch location : /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+
+1) Applying the Patch to new Oracle home :
+
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_3
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch
+
+2) Verify the Oracle Inventory
+	opatch lsinventory
+
+3) Determine whether any currently installed interim patches conflict with this patch 33808385 as shown as follows:
+
+$ cd /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+$ opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+4) For an Oracle RAC environment, shut down all the services (database, ASM, listeners, nodeapps, and CRS daemons) running from the Oracle home on 
+all the nodes you want to patch. 
+
+crsctl stop crs 
+ps -ef | grep -i pmon 
+ps -ef | grep -i tns
+ps -ef | grep -i d.bin
+
+5). Apply the patch
+
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_3
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch
+
+opatch prereq CheckActiveFilesAndExecutables -ph ./
+
+$ cd /u01/APR_QFSDP/grid_patch/OJVMRU/35050341
+opatch apply
+
+6) Verify the patch is applied :
+/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch/opatch lsinv | egrep -i "35050341"
+
+7) Execute the same steps on the second node :
+
+Need to check with Customer .
+
+8) Datapatch Apply :
+Set lines 200 pages 200
+COL PATCH_ID    FORMAT 999999999
+COL PATCH_TYPE  FORMAT a10
+COL ACTION      FORMAT a10
+COL STATUS      FORMAT a10
+COL ACTION_TIME FORMAT a30
+COL DESCRIPTION FORMAT a45
+SELECT PATCH_ID,PATCH_TYPE,ACTION,STATUS,ACTION_TIME,DESCRIPTION,SOURCE_VERSION,TARGET_VERSION from dba_registry_sqlpatch order by ACTION_TIME desc;
+
+Post patch installation :
+==========================
+sqlplus / as sysdba
+startup
+cd $ORACLE_HOME/OPatch
+./datapatch -verbose 
+if required run below
+@?/rdbms/admin/utlrp.sql
+
+
+If Required Rollback steps for opatch auto :
+============================================
+opatchauto rollback /u01/APR_QFSDP/grid_patch/19.15.0.0.0/19.15.0.0.220419GIRU/33803476 -oh /u01/app/12.2.0.0/grid
+
+[root@myclusterdb03]# cd /patches/OCT2016_bundle_patch/24436624/Database/12.1.0.2.0/12.1.0.2.161018DBBP/24448103
+[root@myclusterdb03 24448103]# /u01/app/12.1.0.2/grid/OPatch/opatchauto resume -oh /u01/app/12.1.0.2/grid
+
+
+Suggestion for service configuration:
+#######################################
+All the connection to the datbase should be configured in application using services.
+Prefered and available instance we can configure for all the services.
+It is easy to relocate the service to other node and take the reboot of the instance which will not disconnect the session. 
+Current services configuration in the environment :
+
+============================
+Out of Place OJVM Patching :
+============================
+1. Verify the Oracle Inventory on 1st Node :
+"Login to oraexa01db01 as Oracle user :
+export ORACLE_HOME=/u01/app/oracle/product/19.0.0.0/dbhome_3
+export PATH=$PATH:/u01/app/oracle/product/19.0.0.0/dbhome_3/OPatch
+opatch lsinventory"
+
+2. Conflict check 
+
+"Login to oraexa01db01 as Oracle user :
+cd /u01/OCT_QFSDP/grid_patch/OJVMRU/35648110
+opatch prereq CheckConflictAgainstOHWithDetail -ph ./"
+
+3. Create directory for the dbhome_2 and set proper permission on both the nodes :
+
+"Login to oraexa01db01 as Oracle user :
+[oracle@oraexa01db01 19.0.0.0]$ cd /u01/app/oracle/product/19.0.0.0/
+[oracle@oraexa01db01 19.0.0.0]$ mkdir dbhome_4
+Login to oraexa01db02 as Oracle user :
+[oracle@oraexa01db02 19.0.0.0]$ cd /u01/app/oracle/product/19.0.0.0/
+[oracle@oraexa01db02 19.0.0.0]$ mkdir dbhome_4"
+
+4. Create Golden image as oracle user on the first node
+
+"Login to oraexa01db01 as Oracle user :
+cd /u01/app/oracle/product/19.0.0.0/dbhome_3
+./runInstaller -createGoldImage -destinationLocation /u01/app/oracle/product/19.0.0.0/dbhome_4 -silent"
+
+5. Unzip Golden Image :
+"Login to oraexa01db01 as Oracle user :
+cd /u01/app/oracle/product/19.0.0.0/dbhome_4
+unzip 19c_Jan_PSU_Gold_Image.zip"
+
+5.  Copy the response file from the old home and change the new home path in it . 
+
+"Login to oraexa01db01 as Oracle user :
+cp /u01/app/oracle/product/19.0.0.0/dbhome_3/install/response/db_install.rsp /u01/app/oracle/product/19.0.0.0/dbhome_4/install/response/db_install.rsp
+vi /u01/app/oracle/product/19.0.0.0/dbhome_4/install/response/db_install.rsp"
+
+6. Install the new oracle home and register it and apply the patch
+
+Login to oraexa01db01 as Oracle user :
+unset ORACLE_HOME ORACLE_BASE ORACLE_SID
+cd /u01/app/oracle/product/19.0.0.0/dbhome_4
+./runInstaller -ignorePrereq -waitforcompletion -silent -responseFile /u01/app/oracle/product/19.0.0.0/dbhome_4/install/response/db_install.rsp -applyRU /u01/OCT_QFSDP/grid_patch/GIRU/35642822 -applyOneOffs /u01/OCT_QFSDP/grid_patch/OJVMRU/35648110
+/u01/app/oracle/product/19.0.0.0/dbhome_4/OPatch/opatch lsinv | egrep -i ""35643107|35655527""
+/u01/app/oracle/product/19.0.0.0/dbhome_4/OPatch/opatch lsinv | egrep -i ""35648110"""
+
+7. Update Database configuration
+
+Login to oraexa01db01 as Oracle user :
+$ srvctl config database -d SASX1 # ORACLE_HOME should point to dbhome_3
+$ srvctl modify database -db SASX1 -oraclehome /u01/app/oracle/product/19.0.0.0/dbhome_4
+$ srvctl config database -d SASX1 # ORACLE_HOME should now point to dbhome_4"
+
+8. Restart 1st instance from new home
+
+Login to oraexa01db01 as Oracle user :
+srvctl stop instance -d SASX1 -i SAS1
+srvctl status database -d SASX1 -v
+srvctl start instance -d SASX1 -i SAS1
+srvctl status database -d SASX1 -v"
+
+9. Restart 2nd instance from new home
+"Login to oraexa01db01 as Oracle user :
+srvctl stop service -d SASX1 -s sasw -n oraexa01db02
+srvctl start service -d SASX1 -s sasw -n oraexa01db01
+srvctl stop instance -d SASX1 -i SAS2
+srvctl status database -d SASX1 -v
+srvctl start instance -d SASX1 -i SAS2
+srvctl status database -d SASX1 -v
+srvctl stop service -d SASX1 -s sasw -n oraexa01db01
+srvctl start service -d SASX1 -s sasw -n oraexa01db02"
+
+10. Datapatch Apply
+"SET LINESIZE 400
+SET PAGESIZE 100
+COLUMN action_time FORMAT A20
+COLUMN action FORMAT A10
+COLUMN status FORMAT A10
+COLUMN description FORMAT A80
+COLUMN version FORMAT A10
+COLUMN bundle_series FORMAT A10
+SELECT TO_CHAR(action_time, 'DD-MON-YYYY HH24:MI:SS') AS action_time,action,status,description,
+version, patch_id, bundle_series FROM   sys.dba_registry_sqlpatch ORDER by action_time;
+
+$ echo $ORACLE_HOME                         # This has to be /u01/app/oracle/product/19.0.0.0/dbhome_4
+/u01/app/oracle/product/19.0.0.0/dbhome_4
+$ cd $ORACLE_HOME/OPatch
+$ ./datapatch -verbose"
+
+11. Start the ASM Listener on both the nodes
+"[oracle@oraexa01db01 19.0.0.0]$ so
+0
+oracle@oraexa01db01 19.0.0.0]$ lsnrctl start listener_mon
+
+[oracle@oraexa01db02 19.0.0.0]$ so
+0
+[oracle@oraexa01db02 19.0.0.0]$ lsnrctl start listener_mon"
+
+12. Restore the Crontab 
+"Login to oraexa01db01 as Oracle  user :
+[oracle@oraexa01db01 OPatch]# crontab crontab_24Feb24_Node1
+
+13. Start the OEM agent and Remove the Blackout from OEM
+
+Login to oraexa01db02 as Oracle  user :
+[oracle@oraexa01db02 OPatch]# crontab crontab_24Feb24_Node2"
+"Login to oraexa01db01 as Oracle user :
+[oracle@oraexa01db01 bin]$ cd /u01/app/oracle/product/agent13_5c/agent_inst/bin
+[oracle@oraexa01db01 bin]$ ./emctl start agent
+
+Login to oraexa01db02 as Oracle  user :
+[oracle@oraexa01db02 bin]$ cd /u01/app/oracle/product/agent13_5c/agent_inst/bin
+[oracle@oraexa01db02 bin]$ ./emctl start agent"
+
+
+
+Patching lession learnt :
+=========================
+
+Exadata Patching – Best Practices and Lessons Learned
+Updated: Aug 19, 2019
+
+ 
+
+“With Great Power Comes Great Responsibility”
+
+
+One of the biggest ongoing responsibilities that comes after commissioning an Exadata appliance is keeping the firmware and software of the various components of the machine up to date. As you’ve probably construed, we are talking about patching an Exadata Appliance.
+
+
+An Exadata appliance has three layers that requires software maintenance. The bottom and top sections of the rack hold the Exadata Storage servers followed by the compute/database nodes and lastly the InfiniBand switches as depicted from the image below.
+
+
+
+
+Let us take the case of a recent client who had all its business-critical application databases running in a gamut of environments from Sandpit to End to End and Production on Exadata machines in varying configurations starting from a Quarter Rack of Exadata X4-8 in sandpit to a Full Rack of Exadata X5/6-2 in production. We successfully patched the Exadata server to the latest patchset levels as approved by the business.
+
+
+Meticulous planning in patching of these components is Important to ensure a low risk change. That is; maintaining the continuity of services while also making the process as time efficient as possible and producing a predictable outcome – a successful patching process.
+
+
+Based on our years of experience some of the Best Practices we employ are as follows:
+
+
+1.Patching Approach: Clearly delineate the components that could be patched online and those that require a downtime. E.g. Online-Patching for Storage and InfiniBand and Outage for Db Nodes OS and Grid Infrastructure.
+
+
+2. Patch Staging Area: Setup of a standard and uniform patch staging area on the first compute node of each Exadata machine being patched which contains patches for various components.
+
+
+3. Proactive SR: Always open a proactive SR with Oracle well in advance of sharing your patching schedule, your patching procedure, prechecks like Exachk reports, Patchmgr precheck reports and any issues encountered. A proactive SR also ensures that Oracle support personnel have been pre-allocated and are on standby while you patch your Exadata machine.
+
+
+4. Integrated Lights-out Management (ILOM) Access:  Always ensure ILOM access is enabled for each component being patched i.e. Storage cells, InfiniBand Switches and Compute nodes.
+
+
+5. SSH Passwordless Access: Ensure a successful passwordless SSH to each component being patched from the first compute node.
+
+
+6. Exachk Reports: Ensure the latest version of the Exachk utility has been used and the health issues (if any) have been carefully been reviewed, discussed with Oracle support and fixed (where applicable) before you proceed with patching.
+
+
+7. Preparing Exadata Components: Ensure that a patchmgr pre-check is run and that it is successful without any issues before the actual patching of any component like Cell Server, InfiniBand Switch and Compute Nodes.
+
+
+8. Maintenance Mode: Ensure that the component being patched is in maintenance mode i.e under a Blackout to avoid unwanted notifications and repeated alerts during patching.  
+
+
+9. Component Patching: Only after ensuring all the above points 1 to 8 have been carried should the actual patching of the Exadata component be commenced based on the patching approach using the patchmgr utility in a non-rolling/rolling fashion as approved by the business.
+
+
+10. Review Patching Outcome: Carefully review all patchmgr run output and logs. Report any unexpected errors and deviations to Oracle support using the Proactive SR.
+
+
+11. Post Patching Checks: Crosscheck the imageinfo version of the various components patched for the Exadata appliance.
+
+Ensure that a health check using the Exachk utility is run and carefully analyse and compare the Exachk report to the one taken right before the patching. Report any concerns to Oracle Support.
+
+
+12. End Maintenance Mode: Ensure that maintenance mode/blackout has been ended immediately post patching.
+
+
+An Exadata patching cycle is usually full of experiences that really widen your understanding of how the different components in an Exadata machine behave or may behave under varying environmental factors and the practices that are required while commissioning them. 
+
+
+
+
+
+
+
+==================================
+LVM Work : 
+Step 1) Check for the active filesystem
+ df -h /
+
+Step 2) Get the current volumn information :
+ lvs -o lv_name,lv_path,vg_name,lv_size
+
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  15.00g
+
+Step 3) Use the df command to identify the file system type that is used in the root partition (/).
+df -hT /
+
+Step 4) Verify there is available space in the volume group VGExaDb using the vgdisplay command.
+vgdisplay -s
+
+
+Step 5) Resize LVDbSys2 logical volumes using the lvextend command.
+ E.g lvextend -L +XG --verbose /dev/VGExaDb/LVDbSys2
+ 
+ lvextend -L +35G /dev/VGExaDb/LVDbSys2
+ 
+ 
+
+Step 6) Resize the xfs file system within the logical volume.
+
+	The inactive root partition is LVDbSys2, whichever is not currently mounted.
+	Examine the output from the df command to confirm the active partition
+	
+	[root@oraexa01db01 ~]# df -hT /
+	Filesystem                   Type  Size  Used Avail Use% Mounted on
+	/dev/mapper/VGExaDb-LVDbSys1 xfs    50G   13G   38G  26% /
+
+LVDbSys1 as the active partition. Therefore, the inactive partition is LVDbSys2.
+
+Mount the inactive root partition to a temporary location.
+
+mkdir -p /tmp/mnt/root
+mount -t xfs /dev/VGExaDb/LVDbSys2 /tmp/mnt/root
+
+Use the xfs_growfs command to resize the inactive file system:
+
+ xfs_growfs /tmp/mnt/root
+
+Unmount the inactive root partition.
+
+umount /tmp/mnt/root
+
+Step 7) Verify the space was extended for the active system partition using below command.
+lvs -o lv_name,lv_path,vg_name,lv_size
+
+
+Rollback Plan:
+==============
+
+Step 1) Check for the active filesystem
+ df -h /
+
+Step 2) Get the current volumn information :
+ lvs -o lv_name,lv_path,vg_name,lv_size
+
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  15.00g
+
+Step 3) Use the df command to identify the file system type that is used in the root partition (/).
+df -hT /
+
+Step 4) Verify there is available space in the volume group VGExaDb using the vgdisplay command.
+vgdisplay -s
+
+
+Step 5) Resize LVDbSys2 logical volumes using the lvextend command.
+ E.g lvextend -L +XG --verbose /dev/VGExaDb/LVDbSys2
+ 
+ lvextend -L -35G /dev/VGExaDb/LVDbSys2
+
+Step 6) Resize the xfs file system within the logical volume.
+
+	The inactive root partition is LVDbSys2, whichever is not currently mounted.
+	Examine the output from the df command to confirm the active partition
+	
+	[root@oraexa01db01 ~]# df -hT /
+	Filesystem                   Type  Size  Used Avail Use% Mounted on
+	/dev/mapper/VGExaDb-LVDbSys1 xfs    50G   13G   38G  26% /
+
+LVDbSys1 as the active partition. Therefore, the inactive partition is LVDbSys2.
+
+Mount the inactive root partition to a temporary location.
+
+mkdir -p /tmp/mnt/root
+mount -t xfs /dev/VGExaDb/LVDbSys2 /tmp/mnt/root
+
+Use the xfs_growfs command to resize the inactive file system:
+
+ xfs_growfs /tmp/mnt/root
+
+Unmount the inactive root partition.
+
+umount /tmp/mnt/root
+
+Step 7) Verify the space was extended for the active system partition using below command.
+lvs -o lv_name,lv_path,vg_name,lv_size
+
+
+
+
+
+
+
+
+Logs from first node :
+=======================
+
+[root@oraexa01db01 ~]# df -h /
+Filesystem                    Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys1   50G   13G   38G  26% /
+[root@oraexa01db01 ~]# lvs -o lv_name,lv_path,vg_name,lv_size
+  LV                       Path                                  VG      LSize
+  LVDbHome                 /dev/VGExaDb/LVDbHome                 VGExaDb   4.00g
+  LVDbOra1                 /dev/VGExaDb/LVDbOra1                 VGExaDb 200.00g
+  LVDbSwap1                /dev/VGExaDb/LVDbSwap1                VGExaDb  16.00g
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  15.00g
+  LVDbTmp                  /dev/VGExaDb/LVDbTmp                  VGExaDb   3.00g
+  LVDbVar1                 /dev/VGExaDb/LVDbVar1                 VGExaDb   2.00g
+  LVDbVar2                 /dev/VGExaDb/LVDbVar2                 VGExaDb   2.00g
+  LVDbVarLog               /dev/VGExaDb/LVDbVarLog               VGExaDb  18.00g
+  LVDbVarLogAudit          /dev/VGExaDb/LVDbVarLogAudit          VGExaDb   1.00g
+  LVDbVdORAEXA01DB01DATAC1 /dev/VGExaDb/LVDbVdORAEXA01DB01DATAC1 VGExaDb 128.00m
+  LVDbVdORAEXA01DB01RECOC1 /dev/VGExaDb/LVDbVdORAEXA01DB01RECOC1 VGExaDb 128.00m
+  LVDoNotRemoveOrUse       /dev/VGExaDb/LVDoNotRemoveOrUse       VGExaDb   2.00g
+[root@oraexa01db01 ~]# df -hT /
+Filesystem                   Type  Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys1 xfs    50G   13G   38G  26% /
+[root@oraexa01db01 ~]# vgdisplay -s
+  "VGExaDb" 3.27 TiB  [313.25 GiB used / 2.96 TiB free]
+[root@oraexa01db01 ~]# lvs -o lv_name,lv_path,vg_name,lv_size  | grep LVDbSys
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  15.00g
+[root@oraexa01db01 ~]#
+[root@oraexa01db01 ~]#
+[root@oraexa01db01 ~]# lvextend -L +35G /dev/VGExaDb/LVDbSys2
+  Size of logical volume VGExaDb/LVDbSys2 changed from 15.00 GiB (3840 extents) to 50.00 GiB (12800 extents).
+  Logical volume VGExaDb/LVDbSys2 successfully resized.
+[root@oraexa01db01 ~]# lvs -o lv_name,lv_path,vg_name,lv_size  | grep LVDbSys
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  50.00g
+[root@oraexa01db01 ~]# df -hT /
+Filesystem                   Type  Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys1 xfs    50G   13G   38G  26% /
+[root@oraexa01db01 ~]# mkdir -p /tmp/mnt/root
+[root@oraexa01db01 ~]# mount -t xfs /dev/VGExaDb/LVDbSys2 /tmp/mnt/root
+[root@oraexa01db01 ~]# xfs_growfs /tmp/mnt/root
+meta-data=/dev/mapper/VGExaDb-LVDbSys2 isize=256    agcount=16, agsize=245760 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0 spinodes=0 rmapbt=0
+         =                       reflink=0
+data     =                       bsize=4096   blocks=3932160, imaxpct=25
+         =                       sunit=256    swidth=256 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=8 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 3932160 to 13107200
+[root@oraexa01db01 ~]# umount /tmp/mnt/root
+[root@oraexa01db01 ~]# lvs -o lv_name,lv_path,vg_name,lv_size
+  LV                       Path                                  VG      LSize
+  LVDbHome                 /dev/VGExaDb/LVDbHome                 VGExaDb   4.00g
+  LVDbOra1                 /dev/VGExaDb/LVDbOra1                 VGExaDb 200.00g
+  LVDbSwap1                /dev/VGExaDb/LVDbSwap1                VGExaDb  16.00g
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  50.00g
+  LVDbTmp                  /dev/VGExaDb/LVDbTmp                  VGExaDb   3.00g
+  LVDbVar1                 /dev/VGExaDb/LVDbVar1                 VGExaDb   2.00g
+  LVDbVar2                 /dev/VGExaDb/LVDbVar2                 VGExaDb   2.00g
+  LVDbVarLog               /dev/VGExaDb/LVDbVarLog               VGExaDb  18.00g
+  LVDbVarLogAudit          /dev/VGExaDb/LVDbVarLogAudit          VGExaDb   1.00g
+  LVDbVdORAEXA01DB01DATAC1 /dev/VGExaDb/LVDbVdORAEXA01DB01DATAC1 VGExaDb 128.00m
+  LVDbVdORAEXA01DB01RECOC1 /dev/VGExaDb/LVDbVdORAEXA01DB01RECOC1 VGExaDb 128.00m
+  LVDoNotRemoveOrUse       /dev/VGExaDb/LVDoNotRemoveOrUse       VGExaDb   2.00g
+
+
+Logs from the second node :
+===========================
+
+[root@oraexa01db02 ~]# df -h /
+Filesystem                    Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys1   50G   12G   38G  24% /
+[root@oraexa01db02 ~]# lvs -o lv_name,lv_path,vg_name,lv_size
+  LV                       Path                                  VG      LSize
+  LVDbHome                 /dev/VGExaDb/LVDbHome                 VGExaDb   4.00g
+  LVDbOra1                 /dev/VGExaDb/LVDbOra1                 VGExaDb 200.00g
+  LVDbSwap1                /dev/VGExaDb/LVDbSwap1                VGExaDb  16.00g
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  15.00g
+  LVDbTmp                  /dev/VGExaDb/LVDbTmp                  VGExaDb   3.00g
+  LVDbVar1                 /dev/VGExaDb/LVDbVar1                 VGExaDb   2.00g
+  LVDbVar2                 /dev/VGExaDb/LVDbVar2                 VGExaDb   2.00g
+  LVDbVarLog               /dev/VGExaDb/LVDbVarLog               VGExaDb  18.00g
+  LVDbVarLogAudit          /dev/VGExaDb/LVDbVarLogAudit          VGExaDb   1.00g
+  LVDbVdORAEXA01DB02DATAC1 /dev/VGExaDb/LVDbVdORAEXA01DB02DATAC1 VGExaDb 128.00m
+  LVDbVdORAEXA01DB02RECOC1 /dev/VGExaDb/LVDbVdORAEXA01DB02RECOC1 VGExaDb 128.00m
+  LVDoNotRemoveOrUse       /dev/VGExaDb/LVDoNotRemoveOrUse       VGExaDb   2.00g
+[root@oraexa01db02 ~]# lvs -o lv_name,lv_path,vg_name,lv_size  | grep LVDbSys
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  15.00g
+[root@oraexa01db02 ~]# df -hT /
+Filesystem                   Type  Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys1 xfs    50G   12G   39G  24% /
+[root@oraexa01db02 ~]# vgdisplay -s
+  "VGExaDb" 3.27 TiB  [313.25 GiB used / 2.96 TiB free]
+[root@oraexa01db02 ~]#
+[root@oraexa01db02 ~]#
+[root@oraexa01db02 ~]# lvextend -L +35G /dev/VGExaDb/LVDbSys2
+  Size of logical volume VGExaDb/LVDbSys2 changed from 15.00 GiB (3840 extents) to 50.00 GiB (12800 extents).
+  Logical volume VGExaDb/LVDbSys2 successfully resized.
+[root@oraexa01db02 ~]#
+[root@oraexa01db02 ~]# lvs -o lv_name,lv_path,vg_name,lv_size  | grep LVDbSys
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  50.00g
+[root@oraexa01db02 ~]# df -hT /
+Filesystem                   Type  Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys1 xfs    50G   12G   38G  24% /
+[root@oraexa01db02 ~]# mkdir -p /tmp/mnt/root
+[root@oraexa01db02 ~]# mount -t xfs /dev/VGExaDb/LVDbSys2 /tmp/mnt/root
+[root@oraexa01db02 ~]# df -h /tmp/mnt/root
+Filesystem                    Size  Used Avail Use% Mounted on
+/dev/mapper/VGExaDb-LVDbSys2   15G   33M   15G   1% /tmp/mnt/root
+[root@oraexa01db02 ~]# xfs_growfs /tmp/mnt/root
+meta-data=/dev/mapper/VGExaDb-LVDbSys2 isize=256    agcount=16, agsize=245760 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=0        finobt=0 spinodes=0 rmapbt=0
+         =                       reflink=0
+data     =                       bsize=4096   blocks=3932160, imaxpct=25
+         =                       sunit=256    swidth=256 blks
+naming   =version 2              bsize=4096   ascii-ci=0 ftype=1
+log      =internal               bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=8 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+data blocks changed from 3932160 to 13107200
+[root@oraexa01db02 ~]# umount /tmp/mnt/root
+[root@oraexa01db02 ~]# lvs -o lv_name,lv_path,vg_name,lv_size  | grep LVDbSys
+  LVDbSys1                 /dev/VGExaDb/LVDbSys1                 VGExaDb  50.00g
+  LVDbSys2                 /dev/VGExaDb/LVDbSys2                 VGExaDb  50.00g
