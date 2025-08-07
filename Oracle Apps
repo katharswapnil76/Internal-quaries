@@ -1,1 +1,748 @@
 
+https://techgoeasy.com/oracle-tutorials/e-business-suite-11ir12r12-1r12-2/
+******* Rafi ORACLE DBA & APPS DBA Blog*******: Useful Queries for Checking Concurrent Requests and Programs
+
+Recommended Browsers for Oracle E-Business Suite Releases 12.2 and 12.1 (Doc ID 389422.1)
+Getting Started with Oracle E-Business Suite on Oracle Cloud Infrastructure (Doc ID 2517025.1)
+
+Start EBS application 
+./adstrtal.sh apps/EaZQ73gh7bckVrLz -mode=allnodes
+
+col VERSION_NO for a20
+col API_COMPATIBILITY for a20
+col PATCH_APPLIED for a20
+SELECT * FROM apex_release;
+SELECT * FROM ords_metadata.ords_version;
+
+
+Oracle E-Business Suite Release 12.2: Patching Technology Components Guide (Doc ID 1355068.1)
+
+Check the oacore process running ?
+Get the Application node  (all nodes) ==> echo $CONTEXT_FILE  => grep -I oacore $CONTEXT_FILE --it will give you how many oacore server are there.
+We need to check for all the oacore server status.
+sh admanagedsrvctl.sh status oacore_server1
+sh admanagedsrvctl.sh status oacore_server12
+sh admanagedsrvctl.sh status oacore_server13
+sh admanagedsrvctl.sh status oacore_server14
+
+Bounce the oacore 
+sh admanagedsrvctl.sh status oacore_server1
+sh admanagedsrvctl.sh stop oacore_server1
+sh admanagedsrvctl.sh start oacore_server1
+
+
+How to know the application version :
+
+SQL> SELECT RELEASE_NAME FROM apps.FND_PRODUCT_GROUPS;
+
+RELEASE_NAME
+--------------------------------------------------
+12.1.3
+
+How to know the application nodes and what it is supporting ?
+ select NODE_NAME,SUPPORT_CP,SUPPORT_FORMS,SUPPORT_WEB,SUPPORT_ADMIN,STATUS,HOST from apps.fnd_nodes ;
+
+
+Concurrent Request :
+==================
+Details of running concurrent request in Oracle EBS :
+ col USER_NAME for a10
+ col MODULE for a20
+ col ACTION for a15
+ col DELAYED_START for a15
+ col RUNNING_SINCE for a20
+ col ARGUMENT_TEXT for a20
+ col FULL_NAME for a20
+ col USER_NAME for a20
+
+Select substr(Concurrent_Queue_Name,1,12) Manager,fu.user_name,fcp.user_Concurrent_Program_Name full_name,
+substr(Fcp.Concurrent_Program_Name,1,35) short_name,fcr.concurrent_program_id "PROGRAM ID",Request_Id Request,
+REQUEST_DATE,
+to_char(actual_start_date, ' DAY DD-MON-YY HH:MI AM') ACTUAL_START_DATE ,
+--to_char(SYSDATE, 'DAY DD-MON-YY HH:MI AM') CURRENT_TIME,
+floor(((ACTUAL_START_DATE-request_date)*24*60*60)/3600)|| ' Hrs ' ||
+floor((((ACTUAL_START_DATE-request_date)*24*60*60) -
+floor(((ACTUAL_START_DATE-request_date)*24*60*60)/3600)*3600)/60)|| ' Mins ' ||
+round((((ACTUAL_START_DATE-request_date)*24*60*60) -
+floor(((ACTUAL_START_DATE-request_date)*24*60*60)/3600)*3600 -
+(floor((((ACTUAL_START_DATE-request_date)*24*60*60) -
+floor(((ACTUAL_START_DATE-request_date)*24*60*60)/3600)*3600)/60)*60) ))|| ' Secs ' "DELAYED_START",
+floor(((SYSDATE-ACTUAL_START_DATE)*24*60*60)/3600)|| ' Hrs ' ||
+floor((((SYSDATE-ACTUAL_START_DATE)*24*60*60) -
+floor(((SYSDATE-ACTUAL_START_DATE)*24*60*60)/3600)*3600)/60)|| ' Mins ' ||
+round((((SYSDATE-ACTUAL_START_DATE)*24*60*60) -
+floor(((SYSDATE-ACTUAL_START_DATE)*24*60*60)/3600)*3600 -
+(floor((((SYSDATE-ACTUAL_START_DATE)*24*60*60) -
+floor(((SYSDATE-ACTUAL_START_DATE)*24*60*60)/3600)*3600)/60)*60) ))|| ' Secs ' "RUNNING_SINCE",
+argument_text,
+vs.sid,vs.serial#,vs.sql_id,vs.event,vs.blocking_session,vs.status,vs.osuser,
+vs.machine,vs.program,vs.module,vs.action,
+--Status_code,
+fcr.ofile_size,
+fcr.lfile_size
+from 
+apps.Fnd_Concurrent_Queues Fcq, 
+apps.Fnd_Concurrent_Requests Fcr,
+apps.Fnd_Concurrent_Programs_vl Fcp, 
+apps.Fnd_User Fu, 
+apps.Fnd_Concurrent_Processes Fpro,
+v$session vs,
+v$process vp
+where
+Phase_Code = 'R' 
+And Status_Code <> 'W' 
+And Fcr.Controlling_Manager = Concurrent_Process_Id 
+And (Fcq.Concurrent_Queue_Id = Fpro.Concurrent_Queue_Id    
+And Fcq.Application_Id      = Fpro.Queue_Application_Id ) 
+And (Fcr.Concurrent_Program_Id = Fcp.Concurrent_Program_Id 
+And Fcr.Program_Application_Id = Fcp.Application_Id )     
+And Fcr.Requested_By = User_Id                            
+And fcr.ORACLE_PROCESS_ID=vp.sPID                          
+And vs.PADDR=vp.addr
+--AND fcp.user_Concurrent_Program_Name='Inventory transaction worker'
+--AND fu.USER_NAME='502525468'
+--AND FCR.ACTUAL_START_DATE>SYSDATE-2/24
+--AND fcr.argument_text like '3831511256, 3, ,%'
+order by fcp.user_Concurrent_Program_Name,ACTUAL_START_DATE desc;
+
+USER SESSION BY CONCURRENT MANAGER REQUEST ID :
+
+set linesize 132
+col pid format 9999 heading 'PID'
+col spid format a6 heading 'SERVER|PID'
+col sid format 9999 heading 'SID'
+col serial# format 99999 heading 'SERIAL'
+col process format a6 heading 'CLIENT|PID'
+col osuser format a8 heading 'OS|USERNAME'
+col username format a10 heading 'ORACLE|USERNAME'
+col log_per_sec format 999999 heading 'LOG|PER|SEC'
+col logical format b9999999999 heading 'LOGICAL|READS'
+col phy_per_sec format b9999 heading 'PHY|PER|SEC'
+col physical_reads format b99999999 heading 'PHYSICAL|READS'
+col audsid format b9999999 heading 'AUDIT|SESSION'
+col program format a32 heading 'PROGRAM NAME'
+col logon_time format a8 heading 'LOGON|TIME'
+col duration format a8 heading 'DURATION'
+col last_call_min format 9999 heading 'LAST|CALL|MIN'
+col status format a1 heading 'S'
+rem
+rem break on report
+rem compute sum of log_per_sec phy_per_sec on report
+rem
+select s.process,
+p.spid,
+s.sid,
+s.serial#,
+s.osuser,
+s.username,
+( i.block_gets + i.consistent_gets ) /
+( ( sysdate - s.logon_time ) * 86400 ) log_per_sec,
+i.block_gets + i.consistent_gets logical,
+physical_reads /
+( ( sysdate - s.logon_time ) * 86400 ) phy_per_sec,
+i.physical_reads,
+to_char( trunc(sysdate) + ( sysdate - s.logon_time ), 'hh24:mi:ss' ) duration,
+s.last_call_et/60 last_call_min,
+decode( s.status, 'ACTIVE', '*', 'INACTIVE', null, 'KILLED', 'K', '?' ) status,
+s.module program
+from v$process p, v$session s, v$sess_io i,
+applsys.fnd_concurrent_requests r
+where i.sid = s.sid
+and s.paddr = p.addr
+and r.oracle_session_id = s.audsid
+and r.request_id = '&request';
+
+DETAILS OF ALL FND CONCURRENT QUEUES:
+
+set lines 132
+col user_concurrent_queue_name format a30 heading 'QUEUE NAME'
+col manager_type format a4 heading 'TYPE'
+col batch_queue format 999 heading 'BATCH|QUEUE'
+col tm_queue format 99 heading 'TM|QUEUE'
+col running_processes format 99 heading 'RUN|JOB'
+col max_processes format 99 heading 'MAX|JOB'
+col min_processes format 99 heading 'MIN|JOB'
+col target_processes format 99 heading 'TARGET|JOB'
+col sleep_seconds format 999 heading 'SLEEP|SECS'
+col sleep_fast format a1 heading 'F'
+col cache_size format 9999 heading 'CACHE|SIZE'
+rem
+break on report
+compute sum of batch_queue tm_queue running_processes max_processes on report
+rem
+select qt.user_concurrent_queue_name,
+manager_type,
+decode( manager_type, '1', running_processes ) batch_queue,
+decode( manager_type, '3', running_processes ) tm_queue,
+running_processes,
+max_processes,
+min_processes,
+target_processes,
+sleep_seconds,
+decode( sleep_seconds, greatest( 30, sleep_seconds ), null, '*' ) sleep_fast,
+cache_size
+from applsys.fnd_concurrent_queues_tl qt,
+applsys.fnd_concurrent_queues q
+where q.application_id = qt.application_id
+and q.concurrent_queue_id = qt.concurrent_queue_id
+and userenv('lang') = qt.language
+order by qt.user_concurrent_queue_name;
+
+WHAT IS CURRENTLY RUNNING FOR ALL CONCURRENT MANAGER QUEUES
+
+set lines 132
+ 
+col request_class_name format a20 heading 'REQUEST CLASS NAME'
+col program format a26 trunc heading 'Program'
+col manager format a16 trunc heading 'Manager|Queue'
+col phase_code format a1 heading 'P'
+col status_code format a1 heading 'S'
+col concurrent_program_name format a12 heading 'PROGRAM NAME'
+col phase_code_r format b999 heading 'RUNNING|JOBS'
+col running_gt_30_min format b999 heading 'RUN|> 30|MIN'
+col running_gt_10_min format b999 heading 'RUN|> 10|MIN'
+col running_lt_1_min format b999 heading 'RUN|< 1|MIN'
+col phase_code_p format b999 heading 'PENDING|JOBS'
+col status_code_q format b999 heading 'STANDBY|JOBS'
+col status_code_i format b999 heading 'TOTAL|WAIT|JOBS'
+col pending_gt_1_min format b999 heading 'WAIT|> 1|MIN'
+col pending_gt_5_min format b999 heading 'WAIT|> 5|MIN'
+col pending_gt_5_min format b999 heading 'WAIT|> 5|MIN'
+col pending_gt_30_min format b999 heading 'WAIT|> 30|MIN'
+rem
+break on report
+compute sum -
+of phase_code_r running_gt_30_min running_gt_10_min running_lt_1_min phase_code_p -
+status_code_q status_code_i pending_gt_1_min pending_gt_5_min pending_gt_30_min -
+on report
+rem
+select nvl( c.request_class_name, 'STANDARD' ) request_class_name,
+count( decode( phase_code, 'R', 'R' ) ) phase_code_r,
+count( decode( phase_code, 'R',
+decode( 1/1440, greatest( 1/1440, sysdate - r.actual_start_date ),
+'R' ) ) ) running_lt_1_min,
+count( decode( phase_code, 'R',
+decode( 10/1440, least( 10/1440, sysdate - r.actual_start_date ),
+'R' ) ) ) running_gt_10_min,
+count( decode( phase_code, 'R',
+decode( 30/1440, least( 30/1440, sysdate - r.actual_start_date ),
+'R' ) ) ) running_gt_30_min,
+count( decode( phase_code, 'P', 'P' ) ) phase_code_p,
+count( decode( status_code, 'Q', 'Q' ) ) status_code_q,
+count( decode( status_code, 'I', 'I' ) ) status_code_i,
+count( decode( status_code, 'I',
+decode( 1/1440, greatest( 1/1440, sysdate - greatest( r.requested_start_date, r.request_date ) ),
+null, 'I' ) ) ) pending_gt_1_min,
+count( decode( status_code, 'I',
+decode( 5/1440, greatest( 5/1440, sysdate - greatest( r.requested_start_date, r.request_date ) ),
+null, 'I' ) ) ) pending_gt_5_min,
+count( decode( status_code, 'I',
+decode( 30/1440, greatest( 30/1440, sysdate - greatest( r.requested_start_date, r.request_date ) ),
+null, 'I' ) ) ) pending_gt_30_min
+from applsys.fnd_concurrent_requests r,
+applsys.fnd_concurrent_request_class c
+where r.request_class_application_id = c.application_id(+)
+and r.concurrent_request_class_id = c.request_class_id(+)
+and phase_code in ( 'P', 'R' )
+and status_code not in ( 'W' )
+and r.hold_flag = 'N'
+and greatest( r.requested_start_date, r.request_date ) <= sysdate
+group by c.request_class_name
+order by 1;
+
+
+
+
+To get information on what request is running a specific SQLID, you may run the below query and pass the SQLID in question when prompted:
+
+SELECT fcr.request_id,
+  fcp.user_concurrent_program_name,
+  vsq.sql_text,
+  vsq.SQL_ID
+FROM apps.fnd_concurrent_requests fcr,
+  v$process vp,
+  v$session vs,
+  v$sql vsq,
+  apps.fnd_concurrent_programs_vl fcp
+WHERE 1=1
+AND vsq.SQL_ID = '&sqlid'
+AND fcr.oracle_process_id = vp.spid
+AND vs.sql_address = vsq.address(+)
+AND vs.paddr = vp.addr
+AND fcr.concurrent_program_id = fcp.concurrent_program_id;
+ 
+
+Once the request_id is retrieved, you may use it to run the below query to get more information on the process:
+
+  select *
+  from fnd_concurrent_requests
+  where request_id = &request_id
+
+HOW TO RETRIEVE APPS PASSWORD – R12 :
+=====================================
+1)    Connect as SYSTEM or SYS USER
+
+2)    Create Function to decrypt the encrypt password
+create FUNCTION apps.decrypt_get_pwd(in_chr_key IN VARCHAR2,in_chr_encrypted_pin IN VARCHAR2)
+RETURN VARCHAR2 AS LANGUAGE JAVA NAME ‘oracle.apps.fnd.security.WebSessionManagerProc.decrypt(java.lang.String,java.lang.String) return java.lang.String’;
+/
+
+3)    Query for the encrypted password
+select ENCRYPTED_FOUNDATION_PASSWORD from apps.fnd_user where USER_NAME=’GUEST’;
+
+4)    Query for decrypt the password
+SELECT apps.decrypt_get_pwd(‘GUEST/ORACLE’,FDSFJKSFSDIO43345NFDF983TRFI3R3OFVFDJVOERGF3REFNOEFEFEWFDSCSDCDSFDS) from dual;
+
+5)    validate the apps password  
+
+
+How To Check If The Forms Server Is Configured In Servlet Or Socket Mode On 11i Or R12
+
+A simple way is to check the following variables in the Applications context file (for instance in $APPL_TOP/admin/<context>.xml for 11i and $INST_TOP/appl/admin/<context>.xml for r12)
+
+Context variable	value for Servlet	value for Socket
+s_forms_servlet_serverurl	11i: /forms/formservlet	(no value, blank)
+	r12: /forms/lservlet
+s_forms_servlet_comment	(no value, blank)	#
+s_frmConnectMode	r12: servlet	r12: socket
+
+
+To get the request and program running in the specific time period below is the query :
+
+SELECT
+  fr.request_id,
+  fr.concurrent_program_id,
+  fp.concurrent_program_name,
+  fr.argument_text,
+  fr.phase_code,
+  fr.status_code,
+  fr.requested_start_date,
+  fr.actual_start_date,
+  fr.ACTUAL_COMPLETION_DATE,
+  fr.CPU_SECONDS ,
+  (fr.ACTUAL_COMPLETION_DATE - fr.actual_start_date) * 24 as Duration
+FROM
+  fnd_concurrent_requests fr
+JOIN
+  fnd_concurrent_programs fp ON fr.concurrent_program_id = fp.concurrent_program_id
+WHERE
+  --fp.concurrent_program_name LIKE '%AR_DOCUMENT%' -- SFTP concurrent program name
+-- AND
+fr.status_code IN ('C', 'E') -- C for Completed, E for Error
+and actual_start_date >= to_date('2023/10/25 00:01:00','YYYY/MM/DD HH24:MI:SS') and ACTUAL_COMPLETION_DATE <= to_date('2023/10/25 14:00:00','YYYY/MM/DD HH24:MI:SS')
+-- And  (fr.ACTUAL_COMPLETION_DATE - fr.actual_start_date) * 24 > 2
+ORDER BY  fr.CPU_SECONDS ,  fr.actual_start_date DESC;
+  
+
+
+Forms Issue :
+============
+R12: Recommended Browsers for Oracle E-Business Suite (Doc ID 389422.1)
+Oracle Apps DBA (R12): Java Forms opening Issue [Solved] (k21academy.com)
+Adding in control panel => java => Security => Edit Site List =>  Click on Add and Paste the URL into the “Location” text box then click OK => Click continue on below screen  => Click OK on Java Control Panel and reload the page.
+
+Long running form session :
+rem long_run_form.sql
+rem
+set linesize 132
+set pagesize 60
+set tab off
+rem
+ttitle 'Long Running Active Form Sessions'
+rem
+col email_address format a26 heading 'EMAIL ADDRESS'
+col user_name format a10 heading 'USER NAME'
+col pid format 9999 heading 'PID'
+col spid format a6 heading 'SERVER|PID'
+col inst_id format 9 heading 'I'
+col sid format 9999 heading 'SID'
+col serial# format 99999 heading 'SERIAL'
+col process format a6 heading 'CLIENT|PID'
+col osuser format a8 heading 'OS|USERNAME'
+col log_per_sec format 99999 heading 'LOG|PER|SEC'
+col logical format b999999999 heading 'LOGICAL|READS'
+col phy_per_sec format b9999 heading 'PHY|PER|SEC'
+col physical_reads format b99999999 heading 'PHYSICAL|READS'
+col audsid format b9999999 heading 'AUDIT|SESSION'
+col program format a30 heading 'PROGRAM NAME'
+col module format a12 heading 'FORM NAME'
+col logon_time format a8 heading 'LOGON|TIME'
+col duration format a8 heading 'DURATION'
+col last_call_min format 999 heading 'LAST|CALL|MIN'
+col orcl_user format a6 heading 'ORACLE|USERID'
+col status format a1 heading 'S'
+col enqueue format a1 heading 'E'
+rem
+select distinct user_name,
+decode( s.status, 'ACTIVE', '*', 'INACTIVE', null, 'KILLED', 'K', '?' ) status,
+decode( s.lockwait, null, null, 'E' ) enqueue,
+s.last_call_et/60 last_call_min,
+s.module,
+s.inst_id,
+s.sid,
+s.serial#,
+-- s.username orcl_usr,
+-- s.osuser osuser,
+s.process,
+p.spid,
+to_char( trunc(sysdate) + ( sysdate - s.logon_time ), 'hh24:mi:ss' ) duration,
+( i.block_gets + i.consistent_gets ) /
+( ( sysdate - s.logon_time ) * 86400 ) log_per_sec,
+i.block_gets + i.consistent_gets logical,
+physical_reads /
+( ( sysdate - s.logon_time ) * 86400 ) phy_per_sec,
+i.physical_reads,
+-- s.action,
+email_address
+from applsys.fnd_logins l,
+applsys.fnd_user u,
+gv$session s,
+gv$sess_io i,
+gv$process p
+where l.user_id = u.user_id
+and s.sid = i.sid
+and s.inst_id = i.inst_id
+and p.pid = l.pid
+-- and s.process = l.spid
+and p.spid = l.process_spid(+)
+and l.end_time is null
+and s.paddr = p.addr(+)
+and s.inst_id = p.inst_id(+)
+and ( s.module in ( 'FNDATTCH', 'FNDSCSGN' )
+or substr( s.action, 1, 5 ) = 'FRM::' )
+and s.last_call_et >= 300
+and s.status in ( 'ACTIVE', 'KILLED' )
+order by last_call_min desc;
+rem
+set linesize 80
+set pagesize 24
+set tab on
+
+Details of SID :
+
+rem vusersid.sql
+ rem
+ set linesize 132
+ rem
+ ttitle 'User Session Statistics'
+ rem
+ col pid format 9999 heading 'PID'
+ col spid format a6 heading 'SERVER|PID'
+ col sid format 9999 heading 'SID'
+ col serial# format 99999 heading 'SERIAL'
+ col process format a6 heading 'CLIENT|PID'
+ col osuser format a8 heading 'OS|USERNAME'
+ col username format a10 heading 'ORACLE|USERNAME'
+ col log_per_sec format 999999 heading 'LOG|PER|SEC'
+ col logical format b9999999999 heading 'LOGICAL|READS'
+ col phy_per_sec format b9999 heading 'PHY|PER|SEC'
+ col physical_reads format b99999999 heading 'PHYSICAL|READS'
+ col audsid format b9999999 heading 'AUDIT|SESSION'
+ col program format a32 heading 'PROGRAM NAME'
+ col module format a32 heading 'MODULE'
+ col logon_time format a8 heading 'LOGON|TIME'
+ col duration format a8 heading 'DURATION'
+ col last_call_min format 9999 heading 'LAST|CALL|MIN'
+ col status format a1 heading 'S'
+ rem
+ select s.process,
+ p.spid,
+ /*
+ p.pid,
+ */
+ s.sid,
+ s.serial#,
+ s.osuser,
+ s.username,
+ ( i.block_gets + i.consistent_gets ) /
+ ( ( sysdate - s.logon_time ) * 86400 ) log_per_sec,
+ i.block_gets + i.consistent_gets logical,
+ physical_reads /
+ ( ( sysdate - s.logon_time ) * 86400 ) phy_per_sec,
+ i.physical_reads,
+ /*
+ s.audsid,
+ */
+ to_char( trunc(sysdate) + ( sysdate - s.logon_time ), 'hh24:mi:ss' ) duration,
+ s.last_call_et/60 last_call_min,
+ decode( s.status, 'ACTIVE', '*', 'INACTIVE', null, 'KILLED', 'K', '?' ) status,
+ decode( s.action, 'Concurrent Request', 'CM/' || s.module, s.module ) module
+ from v$process p, v$session s, v$sess_io i
+ where i.sid = s.sid
+ and s.paddr = p.addr
+ and s.sid = &sid;
+ rem
+ set linesize 80
+
+FIND DETAILS OF SQL OF A SID
+
+rem vusersidsql.sql
+ rem
+ set linesize 132
+ rem
+ ttitle 'User Session Statistics'
+ rem
+ col pid format 9999 heading 'PID'
+ col spid format a6 heading 'SERVER|PID'
+ col sid format 9999 heading 'SID'
+ col serial# format 99999 heading 'SERIAL'
+ col process format a6 heading 'CLIENT|PID'
+ col osuser format a8 heading 'OS|USERNAME'
+ col username format a10 heading 'ORACLE|USERNAME'
+ col log_per_sec format 999999 heading 'LOG|PER|SEC'
+ col logical format b9999999999 heading 'LOGICAL|READS'
+ col phy_per_sec format b9999 heading 'PHY|PER|SEC'
+ col physical_reads format b99999999 heading 'PHYSICAL|READS'
+ col audsid format b9999999 heading 'AUDIT|SESSION'
+ col program format a32 heading 'PROGRAM NAME'
+ col module format a32 heading 'MODULE'
+ col logon_time format a8 heading 'LOGON|TIME'
+ col duration format a8 heading 'DURATION'
+ col last_call_min format 9999 heading 'LAST|CALL|MIN'
+ col status format a1 heading 'S'
+ col hide_sql_hash_value noprint new_value _sql_hash_value
+ rem
+ select s.process,
+ p.spid,
+ /*
+ p.pid,
+ */
+ s.sid,
+ s.serial#,
+ s.osuser,
+ s.username,
+ ( i.block_gets + i.consistent_gets ) /
+ ( ( sysdate - s.logon_time ) * 86400 ) log_per_sec,
+ i.block_gets + i.consistent_gets logical,
+ physical_reads /
+ ( ( sysdate - s.logon_time ) * 86400 ) phy_per_sec,
+ i.physical_reads,
+ /*
+ s.audsid,
+ */
+ to_char( trunc(sysdate) + ( sysdate - s.logon_time ), 'hh24:mi:ss' ) duration,
+ s.last_call_et/60 last_call_min,
+ decode( s.status, 'ACTIVE', '*', 'INACTIVE', null, 'KILLED', 'K', '?' ) status,
+ decode( s.action, 'Concurrent Request', 'CM/' || s.module, s.module ) module,
+ s.sql_hash_value hide_sql_hash_value
+ from v$process p, v$session s, v$sess_io i
+ where i.sid = s.sid
+ and s.paddr = p.addr
+ and s.sid = &sid;
+ rem
+ set linesize 80
+ rem
+ ttitle 'SQL Text'
+ rem
+ col sql_text format a64 heading 'SQL TEXT'
+ rem
+ select sql_text
+ from v$sqltext
+ where hash_value = &_sql_hash_value
+ and &_sql_hash_value <> 0
+ order by piece;
+
+
+Oracle Apps Patching :
+[Troubleshooting] Oracle Apps R12.2 Online Patching ADOP : Prepare Phase Issue :
+[Troubleshooting] Oracle Apps R12.2 ADOP : Prepare Phase Issue (k21academy.com)
+
+To check if the patch is getting applied :
+SELECT adb.bug_number,ad_patch.is_patch_applied('R12',-1, adb.bug_number) FROM ad_bugs adb WHERE adb.bug_number in ('33954860');
+33954860:R12.PO.D
+
+
+SELECT a.request_id,a.oracle_process_id "SPID",frt.responsibility_name,c.concurrent_program_name || ': ' || ctl.user_concurrent_program_name ,a.description,a.ARGUMENT_TEXT,b.node_name,b.db_instance,a.logfile_name,a.logfile_node_name,a.outfile_name,q.concurrent_queue_name,a.phase_code,a.status_code, a.completion_text, actual_start_date, actual_completion_date, fu.user_name,(nvl(actual_completion_date,sysdate)-actual_start_date)*1440 mins ,(SELECT avg(nvl(a2.actual_completion_date-a2.actual_start_date,0))*1440 avg_run_time FROM APPLSYS.fnd_Concurrent_requests a2,APPLSYS.fnd_concurrent_programs c2 WHERE c2.concurrent_program_id = c.concurrent_program_id AND a2.concurrent_program_id = c2.concurrent_program_id AND a2.program_application_id = c2.application_id AND a2.phase_code || '' = 'C') avg_mins ,round((actual_completion_date - requested_start_date),2) * 24 duration_in_hours FROM APPLSYS.fnd_Concurrent_requests a,APPLSYS.fnd_concurrent_processes b ,applsys.fnd_concurrent_queues q ,APPLSYS.fnd_concurrent_programs c,APPLSYS.fnd_concurrent_programs_tl ctl,apps.fnd_user fu ,apps.FND_RESPONSIBILITY_TL frt WHERE a.controlling_manager = b.concurrent_process_id AND a.concurrent_program_id = c.concurrent_program_id AND a.program_application_id = c.application_id AND a.phase_code = 'R' AND a.status_code = 'R' AND b.queue_application_id = q.application_id AND b.concurrent_queue_id = q.concurrent_queue_id AND ctl.concurrent_program_id = c.concurrent_program_id AND a.requested_by = fu.user_id AND a.responsibility_id = frt.responsibility_id ORDER BY a.actual_start_date DESC
+
+From <https://sites.google.com/view/oracle-apps-dba/ebs/apps-concepts/long-running-request> 
+
+
+Recover Weblogic password :
+
+[appserprd@mht-vbol-serap1 netcalledms_domain]$ pwd
+/apps/serprd/Middleware/Oracle_Home/user_projects/domains/netcalledms_domain
+[appserprd@mht-vbol-serap1 netcalledms_domain]$ cd bin
+[appserprd@mht-vbol-serap1 bin]$ . ./setDomainEnv.sh
+^[[6~[appserprd@mht-vbol-serap1 netcalledms_domain]$
+[appserprd@mht-vbol-serap1 netcalledms_domain]$
+[appserprd@mht-vbol-serap1 netcalledms_domain]$ java weblogic.WLST
+ 
+Initializing WebLogic Scripting Tool (WLST) ...
+ 
+Jython scans all the jar files it can find at first startup. Depending on the system, this process may take a few minutes to complete, and WLST may not return a prompt right away.
+ 
+Welcome to WebLogic Server Administration Scripting Shell
+ 
+Type help() for help on available commands
+ 
+wls:/offline> from weblogic.security.internal import BootProperties
+wls:/offline> BootProperties.load("/apps/serprd/Middleware/Oracle_Home/user_projects/domains/netcalledms_domain/servers/AdminServer/security/boot.properties", false)
+wls:/offline> prop = BootProperties.getBootProperties()
+wls:/offline>  print "username: " + prop.getOneClient()
+username: weblogic
+wls:/offline>  print "password: " + prop.getTwoClient()
+password: CZLmh_A6Sq2HuP6c_R
+wls:/offline> exit()
+ 
+ 
+Exiting WebLogic Scripting Tool.
+
+Checking for the Gather Schema Statistics :
+===================================
+set pagesize 200
+set linesize 200
+col "Who submitted" for a25
+col "Status" for a10
+col "Parameters" for a20
+col USER_CONCURRENT_PROGRAM_NAME for a42
+SELECT distinct r.REQUEST_ID,t.user_concurrent_program_name,
+r.argument_text "Parameters",
+to_char(r.ACTUAL_START_DATE,'dd-mm-yy hh24:mi:ss') "Started at",
+to_char(r.ACTUAL_COMPLETION_DATE,'dd-mm-yy hh24:mi:ss') "Completed at",
+round(((nvl(v.actual_completion_date,sysdate)-v.actual_start_date)*24*60)) Etime,substr(u.description,1,25) "Who submitted"
+FROM
+apps.fnd_concurrent_requests r ,
+apps.fnd_concurrent_programs p ,
+apps.fnd_concurrent_programs_tl t,
+apps.fnd_user u, apps.fnd_conc_req_summary_v v
+WHERE 
+r.CONCURRENT_PROGRAM_ID = p.CONCURRENT_PROGRAM_ID
+AND r.actual_start_date >= (sysdate-7)
+AND   r.PROGRAM_APPLICATION_ID = p.APPLICATION_ID
+AND t.concurrent_program_id=r.concurrent_program_id
+AND r.REQUESTED_BY=u.user_id
+AND v.request_id=r.request_id
+and t.user_concurrent_program_name like 'Gather Schema Statistics'
+order by to_char(r.ACTUAL_COMPLETION_DATE,'dd-mm-yy hh24:mi:ss') desc;
+
+
+update apps.fnd_concurrent_requests set phase_code='C' , status_code='X' where request_id='&REQUEST_ID';
+commit;
+select ORACLE_PROCESS_ID from apps.fnd_concurrent_requests where REQUEST_ID='&REQUEST_ID';
+
+
+6 PM Friday system => 
+10.30 PM india time => 
+
+
+Get details of SID : 
+
+set serveroutput on size 50000
+set echo off feed off veri off
+
+accept UNIXID prompt 'Enter SID: '
+
+DECLARE
+  v_sid number;
+  s sys.v_$session%ROWTYPE;
+  p sys.v_$process%ROWTYPE;
+BEGIN
+Begin
+    select sid into v_sid
+    from   sys.v_$process p, sys.v_$session s
+    where  p.addr     = s.paddr
+      and  (P.SPID    = &SID
+       or   s.SID = '&SID');
+  exception
+    when no_data_found then
+      dbms_output.put_line('Unable to find process id &&UNIXID!!!');
+      return;
+    when others then
+      dbms_output.put_line(sqlerrm);
+      return;
+  end;
+
+  select * into s from sys.v_$session where sid  = v_sid;
+  select * into p from sys.v_$process where addr = s.paddr;
+
+  dbms_output.put_line('=====================================================================');
+  dbms_output.put_line('SID/Serial  : '|| s.sid||','||s.serial#);
+  dbms_output.put_line('Foreground  : '|| 'PID: '||s.process||' - '||s.program);
+  dbms_output.put_line('Shadow      : '|| 'PID: '||p.spid||' - '||p.program);
+  dbms_output.put_line('Terminal    : '|| s.terminal || '/ ' || p.terminal);
+  dbms_output.put_line('OS User     : '|| s.osuser||' on '||s.machine);
+  dbms_output.put_line('Ora User    : '|| s.username);
+  dbms_output.put_line('Status Flags: '|| s.status||' '||s.server||' '||s.type);
+  dbms_output.put_line('Tran Active : '|| nvl(s.taddr, 'NONE'));
+  dbms_output.put_line('Login Time  : '|| to_char(s.logon_time, 'Dy HH24:MI:SS'));
+  dbms_output.put_line('Last Call   : '|| to_char(sysdate-(s.last_call_et/60/60/24), 'Dy HH24:MI:SS') || ' - ' || to_char(s.last_call_et/60, '990.0') || ' min');
+  dbms_output.put_line('Lock/ Latch : '|| nvl(s.lockwait, 'NONE')||'/ '||nvl(p.latchwait, 'NONE'));
+  dbms_output.put_line('Latch Spin  : '|| nvl(p.latchspin, 'NONE'));
+
+  dbms_output.put_line('Current SQL statement:');
+  for c1 in ( select * from sys.v_$sqltext
+              where HASH_VALUE = s.sql_hash_value order by piece) loop
+    dbms_output.put_line(chr(9)||c1.sql_text);
+  end loop;
+
+  dbms_output.put_line('Previous SQL statement:');
+  for c1 in ( select * from sys.v_$sqltext
+              where HASH_VALUE = s.prev_hash_value order by piece) loop
+    dbms_output.put_line(chr(9)||c1.sql_text);
+  end loop;
+
+  dbms_output.put_line('Session Waits:');
+  for c1 in ( select * from sys.v_$session_wait where sid = s.sid) loop
+    dbms_output.put_line(chr(9)||c1.state||': '||c1.event);
+  end loop;
+
+  dbms_output.put_line('Connect Info:');
+  for c1 in ( select * from sys.v_$session_connect_info where sid = s.sid) loop
+    dbms_output.put_line(chr(9)||': '||c1.network_service_banner);
+  end loop;
+
+  dbms_output.put_line('Locks:');
+  for c1 in ( select
+          decode(l.type,
+          -- Long locks
+                      'TM', 'DML/DATA ENQ',   'TX', 'TRANSAC ENQ',
+                      'UL', 'PLS USR LOCK',
+          -- Short locks
+                      'BL', 'BUF HASH TBL',  'CF', 'CONTROL FILE',
+                      'CI', 'CROSS INST F',  'DF', 'DATA FILE   ',
+                      'CU', 'CURSOR BIND ',
+                      'DL', 'DIRECT LOAD ',  'DM', 'MOUNT/STRTUP',
+                      'DR', 'RECO LOCK   ',  'DX', 'DISTRIB TRAN',
+                      'FS', 'FILE SET    ',  'IN', 'INSTANCE NUM',
+                      'FI', 'SGA OPN FILE',
+                      'IR', 'INSTCE RECVR',  'IS', 'GET STATE   ',
+                      'IV', 'LIBCACHE INV',  'KK', 'LOG SW KICK ',
+                      'LS', 'LOG SWITCH  ',
+                      'MM', 'MOUNT DEF   ',  'MR', 'MEDIA RECVRY',
+                      'PF', 'PWFILE ENQ  ',  'PR', 'PROCESS STRT',
+                      'RT', 'REDO THREAD ',  'SC', 'SCN ENQ     ',
+                      'RW', 'ROW WAIT    ',
+                      'SM', 'SMON LOCK   ',  'SN', 'SEQNO INSTCE',
+                      'SQ', 'SEQNO ENQ   ',  'ST', 'SPACE TRANSC',
+                      'SV', 'SEQNO VALUE ',  'TA', 'GENERIC ENQ ',
+                      'TD', 'DLL ENQ     ',  'TE', 'EXTEND SEG  ',
+                      'TS', 'TEMP SEGMENT',  'TT', 'TEMP TABLE  ',
+                      'UN', 'USER NAME   ',  'WL', 'WRITE REDO  ',
+                      'TYPE='||l.type) type,
+       decode(l.lmode, 0, 'NONE', 1, 'NULL', 2, 'RS', 3, 'RX',
+                       4, 'S',    5, 'RSX',  6, 'X',
+                       to_char(l.lmode) ) lmode,
+       decode(l.request, 0, 'NONE', 1, 'NULL', 2, 'RS', 3, 'RX',
+                         4, 'S', 5, 'RSX', 6, 'X',
+                         to_char(l.request) ) lrequest,
+       decode(l.type, 'MR', o.object_name,
+                      'TD', o.object_name,
+                      'TM', o.object_name,
+                      'RW', 'FILE#='||substr(l.id1,1,3)||
+                            ' BLOCK#='||substr(l.id1,4,5)||' ROW='||l.id2,
+                      'TX', 'RS+SLOT#'||l.id1||' WRP#'||l.id2,
+                      'WL', 'REDO LOG FILE#='||l.id1,
+                      'RT', 'THREAD='||l.id1,
+                      'TS', decode(l.id2, 0, 'ENQUEUE', 'NEW BLOCK ALLOCATION'),
+                      'ID1='||l.id1||' ID2='||l.id2) objname
+       from  sys.v_$lock l, dba_objects o
+       where sid   = s.sid
+         and l.id1 = o.object_id(+) ) loop
+    dbms_output.put_line(chr(9)||c1.type||' H: '||c1.lmode||' R: '||c1.lrequest||' - '||c1.objname);
+  end loop;
+
+  dbms_output.put_line('=====================================================================');
+
+END;
+/
+
