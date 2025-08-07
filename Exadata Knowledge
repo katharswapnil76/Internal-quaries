@@ -1,1 +1,132 @@
 
+Note ID For Exadata :
+Getting Started With Oracle ILOM
+Exacs learning :
+Exadata Database Service Deep Dive Workshop - Oracle MyLearn
+Exadata maintainance guide : ()
+Preface (oracle.com)
+Maintaining Oracle Exadata Storage Servers
+1. Maintaining Exadata Database Servers (oracle.com)
+
+2. sundiag
+	○ /opt/oracle.SupportTools/sundiag.sh (see document 761868.1)
+3. sosreport
+	○ See How To Collect an Sosreport on Oracle Linux document 1500235.1
+	○ See How to Collect sosreport under Rescue Mode document 1928852.1
+4. ILOM snapshot
+	○ /opt/oracle.SupportTools/sundiag.sh snapshot (see document 761868.1) 
+	
+5. SRDC - ES ILOM Snapshot Collection (Doc ID 1674265.1)
+How to Obtain the Compute Node Exadata System Software Update for Exadata Cloud@Customer(2730739.1)
+
+Hardware Components of Exadata Database Machine (oracle.com)
+Oracle Exadata Database Machine Setup/Configuration Best Practices (Doc ID 1274318.1)
+Oracle Exadata Command Reference
+Exadata X8M-2- Steps to Stop/Start/Restart of RoCE Switches (Doc ID 2696733.1)
+Steps to manually create cell/grid disks on Exadata if auto-create fails during disk replacement (Doc ID 1281395.1)
+How to Resize Grid Disks in Exadata (Doc ID 2176737.1)
+
+Understanding the Exadata Software Image Version :
+
+The Exadata image version number contains the product version, a date code, and a build number.
+
+The Exadata version installed on an Exadata storage server or an Exadata database server is determined with the imageinfo command. The image version of an Exadata release consists of three components. For example, if the command imageinfo -ver returns 12.1.2.1.1.150316.2, then:
+
+	The product version is 12.1.2.1.1
+	The date code is 150316
+	The Oracle-internal build number is 2. This component is not always used.
+
+In most circumstances it is sufficient to reference a release by the product version only, for example, 12.1.2.1.1. However, when upgrading, you need to consider both the product version and date code of the installed and target releases.
+
+Starting with the 12.2.0.2.0 release, the product version no longer uses the legacy nomenclature such as 12.2.0.2. Instead, the product version is a three field format consisting of: Year.Update.Revision, for example 18.1.0.
+
+Rules for Updating to Newer Exadata Version :
+
+When upgrading, you need to consider both the product version and date code of the installed and target releases.
+In most circumstances it is sufficient to reference a release by the product version only, for example, 12.1.2.1.1.
+
+Upgrading to a specific target version must adhere to the following rules, which are enforced by patchmgr:
+
+The product version of the target release must be higher than the installed software and 
+The date code of the target release must be higher than the installed software.
+
+For example, consider an Exadata Database Machine that is currently running image version 12.1.1.1.2.150411, which consists of product version 12.1.1.1.2 and date code 150411.
+
+Upgrading to 12.1.2.1.2.150617.1 is allowed because both rules are satisfied.
+
+Upgrading to 12.1.2.1.1.150316.2 is not allowed because date code 150411 of the installed software is higher than date code 150316 of the target release.
+
+
+
+Exadata commands:
+================
+
+When you want to execute a standard command in CellCLI, you can create a script file with the commands and execute it using START or @ commands. For instance, to execute a script called listdisks.cli, you would issue one of the following:
+
+CellCLI> @listdisks.cli
+CellCLI> start listdisks.cli
+
+you want to record the output to a file named mycellcli.txt
+
+CellCLI> spool mycellcli.txt
+To append to a file you already have, use append
+CellCLI> spool mycellcli.txt append
+Or, if you want to overwrite the file, use replace
+CellCLI> spool mycellcli.txt replace
+To stop spooling, just issue SPOOL OFF.
+
+example where you put all the commands in the file mycellci.commands and you want to spool the results to mycellci.out. This is good for automatic monitoring systems.
+
+cellcli <mycellci.commands >mycellci.out
+
+The CellCLI commands have the following general structure:
+
+<Verb> <Object> <Modifier> <Filter>
+Verb => LIST / CREATE / ALTER / DROP/ DESCRIBE
+Object => celldisk , physicaldisk , LUN
+CellCLI> LIST CELL
+CellCLI> LIST LUN
+LIST PHYSICALDISK
+LIST PHYSICALDISK where diskType='Flashdisk'  --where diskType!='Flashdisk'
+LIST LUN where celldisk = FD_13_uaexacell1
+LIST CELL DETAIL  ==> List the cell Status with all attributes
+LIST CELL attributes flashCacheMode
+LIST CELLDISK 
+List celldisk <Celldisk name> detail
+list lun detail
+list lun 0_0 detail
+CellCLI> list griddisk attributes name, ASMDeactivationOutcome, ASMModeStatus
+
+The describe command does not show two important attributes:
+• ASMModeStatus – whether a current ASM diskgroup is using this griddisk. A value of ONLINE indicates this grid disk is being used.
+• ASMDeactivationOutcome – recall that grid disks can be deactivated, which is effectively taking them offline. Since ASM mirroring ensures that the data is located on another disk, making this disk offline does not lose data. However, if the mirror is offline, or is not present, then making this grid disk offline will result in loss of data. This attribute shows whether the grid disk can be deactivated without loss of data. A value of “Yes” indicates you can deactivate this grid disk without data loss.
+
+list flashcache
+list flashcache detail
+dcli -g all_cells -l root "cellcli -e list cell"
+
+
+
+how can check VMs are configured on top db node
+
+for X8 KVM you can Run the command /opt/exadata_ovm/vm_maker --list-domains
+ https://docs.oracle.com/en/engineered-systems/exadata-database-machine/dbmmn/managing-oracle-vm-guests-kvm.html#GUID-F0854E3B-675E-4C27-9D53-11EF3C4B42FB
+
+Failed disk will be automatically re-created and automatically got added to the diskgroup . Grid disk automaticall changed to online when the cell recover from failure :
+New Features for Oracle Exadata System Software Release 11.x
+
+How to clear the fault from the exadata ilom :
+=====================================
+ssh oraexa02celadm06-ilom
+show /SP/faultmgmt/shell
+-> start /SP/faultmgmt/shell
+Are you sure you want to start /SP/faultmgmt/shell (y/n)? y
+faultmgmtsp> fmadm faulty
+faultmgmtsp> fmadm acquit UUID  => UUID is from the above command. 
+faultmgmtsp> fmadm acquit 8d9b2262-6d38-6e5c-db1d-aa2b857213a4
+faultmgmtsp> fmadm acquit 99f717f9-78e5-42cf-a629-d4ef0e1675c6
+faultmgmtsp> fmadm acquit 03889bba-6329-c612-d6ef-eeed5ec035e1
+faultmgmtsp> fmadm faulty
+No faults found
+
+ASM Support Guy: Auto disk management feature in Exadata
