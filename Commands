@@ -1,1 +1,591 @@
 
+OEM :
+=====
+
+CHECK OMS :
+
+/data/app/oracle/product/middleware/oms/bin/emctl status oms -details
+/data/app/oracle/product/middleware/oms/bin/emctl stop oms -all
+/data/app/oracle/product/middleware/oms/bin/emctl start oms 
+
+CHECK OMA STATUS :
+
+ $ /data/app/oracle/product/agent/agent_inst/bin/emctl status agent
+ $ /data/app/oracle/product/agent/agent_inst/bin/emctl stop agent
+$ /data/app/oracle/product/agent/agent_inst/bin/emctl start agent
+
+
+du -ah / | sort -n -r | head -n 10
+
+To check the latest patch applied to database :
+
+-- on Windows system:
+cd %ORACLE_HOME%\OPatch
+opatch lsinventory
+Reading SYS ops document for ETRN and Checking access to ETRN database and all server.
+--On Linux
+$ORACLE_HOME/OPatch/opatch lsinventory|grep "Patch description"
+
+Check Patches from SQLPLUS by connecting with SYSDBA
+
+-- For upto 11g
+COLUMN action_time FORMAT A20
+COLUMN action FORMAT A20
+COLUMN version FORMAT A10
+COLUMN comments FORMAT A30
+COLUMN bundle_series FORMAT A10
+
+SELECT TO_CHAR(action_time, 'DD-MON-YYYY HH24:MI:SS') AS action_time,action, version, id, comments, bundle_series FROM sys.registry$history
+ORDER by action_time;
+
+--From 12c onwards
+
+col action_time for a28
+col action for a8
+Col DESCRIPTION for a40
+col status for a10
+set line 999 pages 999
+select patch_id,ACTION,STATUS,ACTION_TIME,DESCRIPTION,BUNDLE_SERIES,BUNDLE_ID from dba_registry_sqlpatch order by ACTION_TIME desc;
+
+select patch_id,ACTION,STATUS,ACTION_TIME,DESCRIPTION,BUNDLE_SERIES,BUNDLE_ID from CDB_REGISTRY_SQLPATCH order by ACTION_TIME desc;
+
+Set lines 200 pages 200
+COL PATCH_ID    FORMAT 999999999
+COL PATCH_TYPE  FORMAT a10
+COL ACTION      FORMAT a10
+COL STATUS      FORMAT a10
+COL ACTION_TIME FORMAT a30
+COL DESCRIPTION FORMAT a45
+SELECT PATCH_ID,PATCH_TYPE,ACTION,STATUS,ACTION_TIME,DESCRIPTION,SOURCE_VERSION,TARGET_VERSION from dba_registry_sqlpatch order by ACTION_TIME desc;
+
+
+Check patch is applied or not with DBMS package
+
+--- Put patch number which you want to check
+select xmltransform(dbms_qopatch.is_patch_installed('29494060'),dbms_qopatch.get_opatch_xslt) "Patch installed?" from dual;
+
+Check all patches applied from DBMS
+
+ set serverout on;
+ exec dbms_qopatch.get_sqlpatch_status;
+
+
+DR Monitoring commadns:
+-----------------------------------
+
+select thread#, max(sequence#) "Last Primary Seq Generated" from v$archived_log val, v$database vdb where val.resetlogs_change# = vdb.resetlogs_change# group by thread# order by 1;
+
+On Physical Standby Server:
+
+--Check received log on standby
+select thread#, max(sequence#) "Last Standby Seq Received" from v$archived_log val, v$database vdb where val.resetlogs_change# = vdb.resetlogs_change# group by thread# order by 1;
+
+--Check applied log on standby
+select thread#, max(sequence#) "Last Standby Seq Applied" from v$archived_log val, v$database vdb where val.resetlogs_change# = vdb.resetlogs_change# and val.applied in ('YES','IN-MEMORY') group by thread# order by 1;
+
+RMAN:
+======
+select * from v$flash_recovery_area_usage;
+select * from v$recovery_file_dest;
+alter system set db_recovery_file_dest_size = 40g scope=memory;
+
+List backup summary;
+List backup tag=<>;
+
+Password file :
+============
+
+select * from v$pwfile_users;
+
+
+
+RAC:
+=====
+
+srvctl getenv database -d rac
+srvctl getenv database -d rac -t "TNS_ADMIN"
+srvctl setenv database -d rac -T "AIQNDY389SZ=WQOIUN38"
+srvctl setenv database -d racdb -T "TNS_ADMIN=/oracle/102/asm/network/admin"
+srvctl unsetenv database -d rac -t "AIQNDY389SZ"
+You can set environment variables with srvctl for databases, nodeapps, ASM, VIP &listener
+srvctl setenv asm -t "<name>=<val> [,...]" | -T "<name>=<value>"
+
+Unix :
+======
+
+tar -czf /root/backup_ahf_for_upgrade/oracle.ahf.20.1.3.0.0.tar.gz ./oracle.ahf  ==> archive and zip 
+tar xzf <archive name>.tar.gz  => Unarchive file
+tar xzfC <archive name>.tar.gz <location>  => It will allow to specify the location where to unarchive.
+
+find /opt/oracle/diag/rdbms/dbname/instance_name/trace -name "*.trc" -mtime +3 -exec rm {} \;
+find /opt/oracle/diag/rdbms/dbname/instance_name/trace -name "*.trm" -mtime +3 -exec rm {} \;
+find /opt/oracle/diag/rdbms/dbname/instance_name/trace -name "*.gz" -mtime +3 -exec rm {} \;
+find /opt/oracle/diag/tnslsnr/hostname/listener_dbname/alert -name "log*xml" -mtime +3 -exec rm {} \;
+(or)
+ find . -name "*.aud" -mtime +7 -exec rm -f {} \;
+
+du -a / | sort -n -r | head -n 5
+find . -xdev -type f -size +100M -print | xargs ls -lh | sort -k5,5 -h -r
+ls -l | grep '^d' 
+To find the files more that 4 gb if we want smaller than then use  - sign.
+find . -type f -size +4G/M/k
+
+To delete the audit files:
+/usr/bin/find /u01/app/11.2.0/grid/rdbms/audit /u01/app/11.2.0/grid/rdbms/audit /u01/app/oracle/admin/+ASM1/adump -maxdepth 1 -name '*.aud' -mtime +30 -delete
+
+Listener connection failed attempt from the logdetails :
+
+ grep "24-MAR" /opt/oracle/diag/tnslsnr/stagedevdb2/listener/trace/listener.log | awk  '{ if ( $NF != 0 ) print $0 }'
+
+Cron tab:
+#0-59 0-23 1-31 1-12 0-6
+#Min Hr Date Mth Day Command
+# preclone before backup
+00 23 * * 6 /home/applprod/inoapps/bin/preclone.ksh \
+>/tmp/preclone_appsTier.log 2>/tmp/preclone_appsTier.err
+
+
+
+
+Release Schedule of Current Database Releases (Doc ID 742060.1)
+datapatch and OPatch documentation and MOS note (mikedietrichde.com)
+
+Information Center: Install and Configure Database Server/Client Installations (Doc ID 1351051.2)
+Oracle Database Install FAQ(18c & higher) : Changes,New Features(RPM Based Install & Read Only Oracle Home & Other Features) (Doc ID 2438532.1)
+Assistant: Download Reference for Oracle Database/GI Update, Revision, PSU, SPU(CPU), Bundle Patches, Patchsets and Base Releases (Doc ID 2118136.2)
+NOTE:888828.1 - Exadata Database Machine and Exadata Storage Server Supported Versions
+Primary Note for Database Proactive Patch Program (Doc ID 888.1)
+Oracle Database Patches to Consider for 19c (Doc ID 2781612.2)
+Database PSU/BP/Update/Revision - Known Issues Primary Note (Doc ID 1227443.1)
+Supplemental Readme - Grid Infrastructure Release Update 12.2.0.1.x / 18c /19c (Doc ID 2246888.1)
+Exadata Critical Issues (Doc ID 1270094.1)
+Oracle Exadata: Exadata and Linux Important Recommended Fixes (Doc ID 556.1)
+Oracle Database 19c Important Recommended One-off Patches (Doc ID 555.1)
+
+
+Example: Applying a 12c GI PSU With opatchauto in GI Cluster or Standalone Environment (Doc ID 1594183.1)
+Example: Manually Apply a 12c GI PSU/Interim or DB Interim Patch in Cluster Environment (Doc ID 1594184.1)
+How To Create Gold Image With Various Methods Using Fleet Maintenance (Doc ID 2656092.1)
+https://support.oracle.com/epmos/faces/DocumentDisplay?id=2789364.1&displayIndex=15#aref_section34
+NOTE:1585822.1 - Datapatch: Database 12c or later Post Patch SQL Automation
+NOTE:1595408.1 - Example: Manually Apply a 12c GI PSU/Interim or DB Interim Patch in Standalone Environment
+Troubleshooting Assistant:12c Datapatch Issues (Doc ID 2335899.2)
+NOTE:2419319.1 - Grid Infrastructure Out of Place ( OOP ) Patching using opatchauto
+Steps for Minimal Downtime Grid Infrastructure Out of Place ( OOP ) Patching using gridSetup.sh (Doc ID 2662762.1)
+Critical Patch Update (CPU) Program Oct 2021 Patch Availability Document (PAD) (Doc ID 2796575.1)
+OEM Patching : EM13c: How to Verify Patches Applied to the Enterprise Manager 13c Cloud Control OMS, Agent and Plugins (Doc ID 2138068.1)
+Oracle Database (RDBMS) Releases Support Status Summary (Doc ID 161818.1)
+RAC Rolling Install Process for the "Oracle JavaVM Component Database PSU/RU" (OJVM PSU/RU) Patches (Doc ID 2217053.1)
+
+Why Release Update Revisions (RUR) are tricky - and why RUs are better (mikedietrichde.com)
+Some very important MOS Notes when you upgrade and patch (mikedietrichde.com)
+https://blog.oracle-ninja.com/tag/patching-exadata/
+
+	1) For 12.2.0.1 in July 2017, Oracle is releasing a Database RU, a Grid Infrastructure RU, and an OJVM RU and there are no PSUs or Bundle Patches for the 12.2.0.1 Release. 
+	2) There won’t be any changes on the Windows platform.
+	3) It’s important to mention that there is no third Release Update Revision (RUR-3) planned. The model allows only 2 RURs per RU. Afterwards you have the option to either get the most recent RU – or an RUR based on an older RU.
+	RU ==> RUR1 ==> RUR2 ==> RUR3 (It is not available)  (ref : Differences between PSU / BP and RU / RUR (mikedietrichde.com))
+	4) Don’t be afraid of Optimizer behavior changes: those are disabled by default in RUs. You will need to enable them.
+	5) We don’t required to apply the OJVM patches to Grid home (ref : Do you need to apply OJVM patches to Grid Infrastructure? (mikedietrichde.com))
+	6) Beginning with the October 2022 patching cycle, 19c RURs will no longer be provided for 19.17.0 and above. No additional RURs will be delivered on any platform after the delivery of Oracle Database 19c RUR 19.16.2 in January, 2023.
+
+Oracle releases multiple types of Database patches for the Database and Clusterware installations:
+
+Quarterly Release Updates (Updates) and Quarterly Release Update Revisions (Revisions) - Applies to Database 12.2.0.1 and later
+Quarterly Patch Set Updates (PSUs) and Quarterly Proactive Bundle Patches (BPs) - Applies to Database 12.1.0.2 and prior
+One-off Patches - Applies to all Database versions
+
+Oracle Exadata Patching GI Version Compatibility Requirement – Eclipsys  ==> Important 
+How to Obtain the Compute Node Exadata System Software Update for Exadata Cloud@Customer (Doc ID 2730739.1)
+Exadata X9M/X8M (RoCE-based systems) Software Requirements and Recommendations (Doc ID 2724126.1)
+Exadata Patching Overview and Patch Testing Guidelines (Doc ID 1262380.1)
+Exadata Software Updates Explained (oracle.com)   understanding about the release number
+Exadata System Software Updates - November 2021 (oracle.com)
+Exadata patching Archives | Netsoftmate
+An Unknown DBA blog: Exadata patching : patchmgr -modify_at_prereq (dbnodeupdate.sh -M)   here they have given that we are using the dbnodeupdate.sh for patching compute node before patchmgr . 
+An Unknown DBA blog: exa-versions.sh : Exadata components versions in a glimpse (X8M / ROCE compatible)
+dbnodeupdate.sh and dbserver.patch.zip: Updating Exadata Database Server Software using the DBNodeUpdate Utility and patchmgr (Doc ID 1553103.1)
+ MOS document 1952372.1 describes how to recover from a failing update or rollback on an Exadata DB server. 
+Exadata Patching Overview (pythian.com)
+An Unknown DBA blog: My Exadata patches download cheat sheet
+An Unknown DBA blog: How to Patch / Upgrade Exadata to any version -- Part 1 -- Introduction and Prerequisites  ==> Very good blog on patching complete overview
+How to patch an exadata (part 1) - introduction and prerequisites | Official Pythian®® Blog   ==> This is also good blog on patching complete overview
+Exadata Database Machine and Exadata Storage Server Supported Versions (Doc ID 888828.1)
+Database 18 Proactive Patch Information (Doc ID 2369376.1)
+Oracle Exadata Database Machine EXAchk (Doc ID 1070954.1)
+Exadata Patching Overview and Patch Testing Guidelines (Doc ID 1262380.1)
+Exadata System Software Certification (Doc ID 2075007.1)
+https://netsoftmate.com/blog/step-by-step-exadata-compute-node-patching-18c/
+ https://unirac.in/blog/oracle-exadata-patching/
+Rollback : How to recover from a failed Linux Exadata DB Server dbnodeupdate or rollback (Doc ID 1952372.1)
+Exadata 21.2.9.0.0 release and update (33818160) (Doc ID 2834085.1)
+Updating Exadata Software (oracle.com)
+Issues and workarounds for Exadata Patching (JAN-2019) | Official Pythian®® Blog
+Relinking Oracle Home FAQ ( Frequently Asked Questions) (Doc ID 1467060.1)
+Compute Node patching :
+=====================
+Need to establish the passwords less connectivity between first storage cell and all compute node for root as well as oracle user.
+We cant do patching from compute node as it will get rebooted so use first cell node. 
+
+We can get the patchmgr tool in the below path 
+/Oct2018_Bundle/28689205/Infrastructure/SoftwareMaintenanceTools/DBServerPatch/19.181002/
+
+ISO image location which is required for the patching will get in the below path :
+
+/Oct2018_Bundle/28689205/Infrastructure/18.1.9.0.0/ExadataDatabaseServer_OL6
+
+
+ROCE Switch :
+===========
+10 Easy Steps To Patch Oracle Exadata X8M RoCE Switch | Netsoftmate
+
+/patches/APR2020/30783929/Infrastructure/19.3.7.0.0/ExadataStorageServer_InfiniBandSwitch/patch_19.3.7.0.0.200428
+
+
+
+Database patching :
+Release Schedule of Current Database Releases (Doc ID 742060.1)
+Patch Conflict checker tool :
+https://support.oracle.com/epmos/faces/PatchConflictCheck
+Critical Patch Update (CPU) Program Jan 2022 Patch Availability Document (PAD) (Doc ID 2817011.1)
+Oracle Database - Overview of Database Patch Delivery Methods - 12.1.0.2 and older (Doc ID 1962125.1)
+Oracle Database - Overview of Database Patch Delivery Methods for 12.2.0.1 and greater (Doc ID 2337415.1)
+NOTE:293369.1 - Primary Note For OPatch
+NOTE:1609718.1 - Datapatch Known Issues
+
+
+CLOD Patching :
+[OCI] Oracle Database Startup Failed with ORA-00210/ ORA-00202 / ORA-15001/ ORA-15040 after Patching DB System OCI (Doc ID 2514240.1)
+https://rajkumar-dba.blogspot.com/2020/03/dbcs-database-cloud-service-patching.html
+Installing Database Patch Updates for Oracle E-Business Suite on Single Instance VM DB System in Oracle Cloud Infrastructure (Doc ID 2360215.1)
+
+Installing Database Patch Updates for Oracle E-Business Suite on Oracle RAC VM DB Systems in Oracle Cloud Infrastructure (Doc ID 2476292.1)
+For Oracle Database 19.0.0.0.0, additional bugfixes are listed in Document 555.1, Oracle Database 19c Important Recommended One-off Patches. You should review these in the context of the quarterly Release Updates (RUs) recommended in this. Do not apply an RU from Document 555.1 unless it is recommended in this Document 2476292.1, and do not apply any Release Update Revisions (RURs). For any bugfixes listed in Document 555.1 that you decide to apply but that are reported as conflicting with the requirements in this document, contact Oracle Support.
+
+
+Cd Exadata_StorageServer_InfinibandSwitch
+
+
+$ORACLE_HOME/OPatch/opatch prereq CheckActiveFilesAndExecutables -ph ./
+$ fuser -c $ORACLE_HOME (option to fuser depends on OS, refer to Man page of respective OS)
+
+OJVM :
+======
+To check OJVM is installed :
+------------------------------------
+SQL> SELECT version, status FROM dba_registry WHERE comp_id='JAVAVM';
+
+VERSION                        STATUS
+------------------------------ -----------
+19.0.0.0.0                     VALID
+
+To check if OJVM is used ?
+------------------------------------
+SQL> select count(*) from x$kglob where KGLOBTYP = 29 OR KGLOBTYP = 56;
+
+  COUNT(*)
+----------
+      8443
+
+
+col service_name format a20
+col username format a20
+col program format a20
+set num 8
+
+select sess.service_name, sess.username,sess.program, count(*)
+from
+v$session sess,
+dba_users usr,
+x$kgllk lk,
+x$kglob
+where kgllkuse=saddr
+and kgllkhdl=kglhdadr
+and kglobtyp in (29,56)
+and sess.user# = usr.user_id
+and usr.oracle_maintained = 'N'      -- #### omit this line on 11.2.0.4
+group by sess.service_name, sess.username, sess.program
+order by sess.service_name, sess.username, sess.program;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Performance Tuning 
+:
+Blogger performance tuning
+Dion Cho - Oracle Performance Storyteller | We are natural born scientists (wordpress.com)
+
+aguppi: oracle: Time Model Statistics
+
+Table 7-4 V$SESS_TIME_MODEL and V$SYS_TIME_MODEL Statistics
+
+Statistic Name	Description
+DB Time	Amount of elapsed time (in microseconds) spent performing Database user-level calls. This does not include the time spent on instance background processes such as PMON.
+DB CPU	Amount of CPU time (in microseconds) spent on database user-level calls. This does not include the CPU time spent on instance background processes such as PMON.
+background CPU time	Amount of CPU time (in microseconds) consumed by database background processes.
+sequence load elapsed time	Amount of elapsed time spent getting the next sequence number from the data dictionary. If a sequence is cached, then this is the amount of time spent replenishing the cache when it runs out. No time is charged when a sequence number is found in the cache. For non-cached sequences, some time will be charged for every nextval call.
+parse time elapsed	Amount of elapsed time spent parsing SQL statements. It includes both soft and hard parse time.
+hard parse elapsed time	Amount of elapsed time spent hard parsing SQL statements.
+SQL execute elapsed time	Amount of elapsed time SQL statements are executing. Note that for select statements this also includes the amount of time spent performing fetches of query results.
+connection management call elapsed time	Amount of elapsed time spent performing session connect and disconnect calls.
+failed parse elapsed time	Amount of time spent performing SQL parses which ultimately fail with some parse error.
+hard parse (sharing criteria) elapsed time	Amount of elapsed time spent performing SQL hard parses when the hard parse resulted from not being able to share an existing cursor in the SQL cache.
+hard parse (bind mismatch) elapsed time	Amount of elapsed time spent performing SQL hard parses when the hard parse resulted from bind type or bind size mismatch with an existing cursor in the SQL cache.
+PL/SQL execution elapsed time	Amount of elapsed time spent running the PL/SQL interpreter. This does not include time spent recursively executing/parsing SQL statements or time spent recursively executing the Java VM.
+PL/SQL compilation elapsed time	Amount of elapsed time spent running the PL/SQL compiler.
+inbound PL/SQL rpc elapsed time	Time inbound PL/SQL remote procedure calls have spent executing. It includes all time spent recursively executing SQL and JAVA, and therefore is not easily related to "PL/SQL execution elapsed time".
+Java execution elapsed time	Amount of elapsed time spent running the Java VM. This does not include time spent recursively executing/parsing SQL statements or time spent recursively executing PL/SQL.
+
+Performance Tuning Basics 15 : AWR Report Analysis – Expert Oracle
+
+Will need to get the details from here .
+
+https://techgoeasy.com/oracle-performance-tuning-glossary/
+https://techgoeasy.com/oracle-tutorials/oracle-performance-tuning/
+
+AWR report Parse cpu to parse elapsed :
+https://orakhoj.blogspot.com/2011/04/awr-analysis-parse-cpu-to-parse-elapsd.html#.YjMudNJFDMA
+
+
+Ash Report:
+==========
+@$ORACLE_HOME/rdbms/admin/ashrpt.sql
+
+@$ORACLE_HOME/rdbms/admin/awrddrpt.sql        => Linux     
+@?/rdbms/admin/awrrpt.sql                     => Windows
+@$ORACLE_HOME/rdbms/admin/sqltrpt.sql		  => Linux
+@?/rdbms/admin/sqltrpt.sql                    => Windows
+
+SQL Report ADW :
+SQL Report - ADB Specific (Doc ID 3013938.1)
+
+declare
+my_report clob;
+begin
+my_report := dbms_sqldiag.report_sql('gtckcpxmp3ry7',directory=>'DATA_PUMP_DIR',level=>'ALL');
+end;
+/
+SELECT * FROM table(dbms_cloud.list_files('DATA_PUMP_DIR'));
+BEGIN
+DBMS_CLOUD.PUT_OBJECT(
+credential_name => 'mycredential_name',
+object_uri => 'myobjectstorageuri',
+directory_name => 'DATA_PUMP_DIR',
+file_name => 'nameofreportfile');
+END;
+/
+
+
+
+
+
+CPU Usage per database :
+https://bdrouvot.wordpress.com/exadata/
+https://bdrouvot.wordpress.com/2012/12/04/real-time-cpu-utilization-per-oracle-database/
+
+SQL Tuning / Current session wait event :
+=================================
+
+https://dba.stackexchange.com/questions/140433/how-to-find-out-why-this-query-is-in-waiting-state
+SECONDS_IN_WAIT :
+If the session is currently waiting, then the value is the amount of time waited for the current wait. If the session is not in a wait, then the value is the amount of time since the start of the last wait
+WAIT_TIME :
+If the session is currently waiting, then the value is 0.
+Another method to confirm that your session is ON CPU would be querying ASH.
+V$ACTIVE_SESSION_HISTORY / SESSION_STATE (Waiting / On CPU):
+
+If a session is active it is either waiting on some wait event or is on a CPU processing data. In V$SESSION the combination of (STATUS = 'ACTIVE' and TIME_SINCE_LAST_WAIT_MICRO = 0) tells us the session is currently waiting on some wait event. Inversely, (STATUS = 'ACTIVE' and TIME_SINCE_LAST_WAIT_MICRO > 0) tells us the session is active but not waiting on a wait event and therefore is ON CPU.
+
+That means we can query as seen below to see what our active sessions are waiting on, including time ON CPU.
+
+col DTS format a22
+col inst_sid heading "INST_ID|:SID" format a7
+col username format a15
+col machine format a12
+col sql_exec_start   heading "SQL|START|D HH:MM:SS" format a11
+col sql_id format a13
+col module format a16
+col event format a33
+col SEQ# format 99990
+col wait_sec heading "WAIT|(SEC)" format 99999
+
+select inst_id||chr(58)||sid as inst_sid
+   ,username
+   ,case
+      when machine like '%\%' then substr(machine,(instr(machine,'\',1)+1),length(machine)) -- WINDOWS HOST NAME FORMANT'
+      when machine like '%.%' then substr(machine,1,(instr(machine,'.',1)-1))               -- UNIX HOST NAME FORMANT
+      else machine
+   end machine
+   ,(sysdate - sql_exec_start) day(1) to second(0) as sql_exec_start
+   ,sql_id
+   ,substr(module,1,15) module
+   ,substr
+      (case time_since_last_wait_micro
+         when 0 then (case wait_class when 'Idle' then '*IDLE* '||event else event end)
+         else 'ON CPU'
+         end
+      ,1,33) event
+   ,seq#
+   ,(case time_since_last_wait_micro
+      when 0 then wait_time_micro
+      else time_since_last_wait_micro
+      end) /1000000 wait_sec
+from gv$session
+where inst_id||chr(58)||sid <> sys_context ('USERENV','INSTANCE')||chr(58)||sys_context ('USERENV','SID')
+   and username is not null
+   and status='ACTIVE'
+order by sql_exec_start,
+   username,
+   sql_id,
+   machine,
+   sid;
+
+                                     SQL
+INST_ID                              START                                                                                 WAIT
+:SID    USERNAME        MACHINE      D HH:MM:SS  SQL_ID        MODULE           EVENT                               SEQ#  (SEC)
+------- --------------- ------------ ----------- ------------- ---------------- --------------------------------- ------ ------
+1:5674  KFAP_CTL        895029       +0 00:00:01 7gs76asdf0wrq DBMS_SCHEDULER   ON CPU                              9715      1
+2:18067 BILLSMITH       BMG-50       +0 00:00:01 2wdfgfsd1uis6                  control file sequential read       10545      0
+1:19743 KFAP_WEB        854072       +0 00:00:09 fjklsd0fw5xm2 D-ZING(732)      PGA memory operation                 852      0
+2:3367  DBSNMP          697384       +0 00:00:59 g0dpalwjdfu4w JDBC Thin Client *IDLE* PL/SQL lock timer            4679     59
+1:8402  KFAP_CTL        284974       +0 00:02:54 a33ncusmx9u0d DBMS_SCHEDULER   cell single block physical read    56311      0
+2:18486 KFAP_RPT        593860       +0 00:22:41 kfismax9rj6y6 KFAP(342,4998)   ON CPU                               728      9
+
+
+
+
+
+
+
+SQL Quert Text improvement technique :
+Merge Precision | Oracle Scratchpad (wordpress.com)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+GC BLOCKS LOST:
+===============
+
+* global cache blocks lost: This statistic shows block losses during transfers. High values indicate network problems. The use of an unreliable IPC protocol such as UDP may result in the value for global cache blocks lost being non-zero. When this occurs, take the ratio of global cache blocks lost divided by global cache current blocks served plus global cache cr blocks served. This ratio should be as small as possible. Many times, a non-zero value for global cache blocks lost does not indicate a problem because Oracle will retry the block transfer operation until it is successful.
+
+* global cache blocks corrupt: This statistic shows if any blocks were corrupted during transfers. If high values are returned for this statistic, there is probably an IPC, network, or hardware problem.
+
+
+
+SQL> SELECT
+2 A.VALUE "GC BLOCKS LOST 1",
+3 B.VALUE "GC BLOCKS CORRUPT 1",
+4 C.VALUE "GC BLOCKS LOST 2",
+5 D.VALUE "GC BLOCKS CORRUPT 2"
+6 FROM GV$SYSSTAT A, GV$SYSSTAT B, GV$SYSSTAT C, GV$SYSSTAT D
+7 WHERE A.INST_ID=1 AND A.NAME='gc blocks lost'
+8 AND B.INST_ID=1 AND B.NAME='gc blocks corrupt'
+9 AND C.INST_ID=2 AND C.NAME='gc blocks lost'
+10 AND D.INST_ID=2 AND D.NAME='gc blocks corrupt';
+
+
+GC BLOCKS LOST 1 GC BLOCKS CORRUPT 1 GC BLOCKS LOST 2 GC BLOCKS CORRUPT 2
+---------------- ------------------- ---------------- -------------------
+4688 0 3644 0
+
+SQL> SQL>
+
+
+SQL> SELECT A.INST_ID "INSTANCE", A.VALUE "GC BLOCKS LOST",
+2 B.VALUE "GC CUR BLOCKS SERVED",
+C 3 .VALUE "GC CR BLOCKS SERVED",
+4 A.VALUE/(B.VALUE+C.VALUE) RATIO
+5 FROM GV$SYSSTAT A, GV$SYSSTAT B, GV$SYSSTAT C
+6 WHERE A.NAME='gc blocks lost' AND
+7 B.NAME='gc current blocks served' AND
+8 C.NAME='gc cr blocks served' and
+9 B.INST_ID=a.inst_id AND
+10 C.INST_ID = a.inst_id;
+
+
+INSTANCE GC BLOCKS LOST GC CUR BLOCKS SERVED GC CR BLOCKS SERVED RATIO
+---------- -------------- -------------------- ------------------- ----------
+1 4688 1867637 719158 .001812281
+2 3644 2050318 717431 .001316593
+
+SQL> SQL>
+SQL>
+SQL> show parameter db_file
+
+NAME TYPE VALUE
+------------------------------------ ----------- ------------------------------
+db_file_multiblock_read_count integer 128
+db_file_name_convert string
+db_files integer 200
+SQL> show parameter db_block
+
+NAME TYPE VALUE
+------------------------------------ ----------- ------------------------------
+db_block_buffers integer 0
+db_block_checking string FALSE
+db_block_checksum string TYPICAL
+db_block_size integer 8192
+SQL>
+
+It's not that bad.
+
+The TCP receive and send buffers are operating system specific settings.
+
+
