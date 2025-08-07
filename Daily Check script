@@ -1,0 +1,557 @@
+[oracle@oraexa01db01 sql]$ cat /home/oracle/dba/jobs/DailyChecks
+#---------------------------------------------------------------------------------------------------------------#
+# Name:         DailyChecks
+# Description:  This script will run a monitoring Daily Checks SQL script and email the output for verification
+# Author:       Rafia Malik
+# Date:         05.07.2022
+# Version:      1.3
+#---------------------------------------------------------------------------------------------------------------#
+
+SetEnvironment()
+{
+export ORACLE_BASE=/u01/app/oracle
+#export ORACLE_HOME=$ORACLE_BASE/product/18.0.0.0/dbhome_1
+export ORACLE_HOME=$ORACLE_BASE/product/19.0.0.0/dbhome_3
+export ORACLE_SID=SAS1
+export TS=`date +"%d%b%Y_%T"`
+export OUTPUT=/home/oracle/dba/logs/DailyChecksSAS.htm
+export SQL_DIR=/home/oracle/dba/jobs/sql
+rm -rf  $OUTPUT || true
+}
+
+RunDailyCheck()
+{
+$ORACLE_HOME/bin/sqlplus  -S " / as sysdba"  <<EOF | tee -a ${OUTPUT}
+@${SQL_DIR}/DailyChecks.sql;
+EOF
+}
+
+SendMail()
+{
+cat <<'EOF' - ${OUTPUT}  | /usr/sbin/sendmail -t
+To: waseem.shahzad@frasers.group, david.henderson@frasers.group, mohammad.niazi@frasers.group, stephen.hazlehurst@frasers.group, john.ashley@frasers.group, simon.kimbrell@frasers.group
+#To:  mohammad.niazi@frasers.group
+#TO: stephen.hazlehurst@frasers.group
+Subject:SAS Live - Production Daily Checks
+Content-Type: text/html
+
+EOF
+}
+
+        SetEnvironment
+        RunDailyCheck
+        SendMail
+
+
+
+==============================
+
+
+SQL file :
+==========
+
+set feedback off
+set pages 99
+set markup html on spool on preformat off entmap on
+<STYLE type='text/css'> -<!-- BODY {background: #FFFFFF} --> -
+</STYLE>" -
+BODY "TEXT='#000FF'" -
+TABLE "WIDTH='90%' BORDER='5'"
+spool /home/oracle/dba/logs/DailyChecksSAS.htm
+
+col hostname format a30
+set linesize 150
+
+prompt
+prompt Instance Status
+prompt
+
+select inst_id, instance_name, host_name,
+case
+   when status !='OPEN' then '<p style="color:red ; background:#f7f7e7">' || status  || '</p>'
+   else status||''
+  end as Status,
+instance_role
+from gv$instance;
+
+prompt
+prompt Blocking Sessions
+prompt
+
+select
+  case
+   when count(*) > 0 then '<p style="color:red ; background:#f7f7e7">' || count(*) || '</p>'
+   else count(*)||''
+  end as Blocking_Sessions
+from dba_blockers;
+
+prompt
+prompt Dataguard Status
+prompt
+
+select to_char(sysdate,'dd-mm-yyyy hh24:mi:ss') "Current Time" from dual;
+select database_role, switchover_status, inst_id from gv$database;
+SELECT INSTANCE_NAME, LOG_ARCHIVED, LOG_APPLIED,  APPLIED_TIME, LOG_ARCHIVED-LOG_APPLIED LOG_GAP ,
+(case when ((APPLIED_TIME is not null and (LOG_ARCHIVED-LOG_APPLIED) is null) or
+            (APPLIED_TIME is null and (LOG_ARCHIVED-LOG_APPLIED) is not null) or
+            ((LOG_ARCHIVED-LOG_APPLIED) > 5))
+      then 'Error! Log Gap is '
+      else 'Normal'
+ end) Status
+FROM
+(
+SELECT INSTANCE_NAME
+FROM GV$INSTANCE
+),
+(
+SELECT MAX(SEQUENCE#) LOG_ARCHIVED
+FROM GV$ARCHIVED_LOG WHERE DEST_ID=1 AND ARCHIVED='YES' and THREAD#=1
+),
+(
+SELECT MAX(SEQUENCE#) LOG_APPLIED
+FROM GV$ARCHIVED_LOG WHERE DEST_ID=2 AND APPLIED='YES' and THREAD#=1
+),
+(
+SELECT TO_CHAR(MAX(COMPLETION_TIME),'dd-mm-yyyy hh24:mi:ss') APPLIED_TIME
+FROM GV$ARCHIVED_LOG WHERE DEST_ID=2 AND APPLIED='YES' and THREAD#=1
+)
+;
+
+prompt
+prompt Backup Status
+prompt
+
+col session_recid format 99999
+col session_stamp format 99999999999
+col status format a150 entmap off
+col input_type format a10
+col dow format a10
+
+SELECT   j.session_recid,
+         j.session_stamp,
+         TO_CHAR (j.start_time, 'yyyy-mm-dd hh24:mi:ss')    start_time,
+         TO_CHAR (j.end_time, 'yyyy-mm-dd hh24:mi:ss')      end_time,
+         (j.output_bytes / 1024 / 1024 / 1024)              output_gbytes,
+         CASE
+             WHEN j.status NOT LIKE 'COMPLETED%'
+             THEN
+                    '<p style="color:red ; background:#f7f7e7">'
+                 || j.status
+                 || '</p>'
+             ELSE
+                 j.status || ''
+         END                                                AS status,
+         j.input_type,
+         --to_char(j.start_time, 'd'),
+         CASE
+             WHEN (SELECT VALUE
+                     FROM nls_session_parameters
+                    WHERE PARAMETER = 'NLS_LANGUAGE') = 'AMERICAN'
+             THEN
+                 DECODE (TO_CHAR (j.start_time, 'd'),
+                         1, 'Sunday',
+                         2, 'Monday',
+                         3, 'Tuesday',
+                         4, 'Wednesday',
+                         5, 'Thursday',
+                         6, 'Friday',
+                         7, 'Saturday')
+             ELSE
+                 DECODE (TO_CHAR (j.start_time, 'd'),
+                         7, 'Sunday',
+                         1, 'Monday',
+                         2, 'Tuesday',
+                         3, 'Wednesday',
+                         4, 'Thursday',
+                         5, 'Friday',
+                         6, 'Saturday')
+         END                                                AS dow,
+         ROUND (j.elapsed_seconds, 1)                       elapsed_seconds,
+         j.time_taken_display,
+         x.cf,
+         x.df,
+         x.i0,
+         x.i1,
+         x.l,
+         ro.inst_id                                         output_instance
+    FROM V$RMAN_BACKUP_JOB_DETAILS j
+         LEFT OUTER JOIN
+         (  SELECT d.session_recid,
+                   d.session_stamp,
+                   SUM (
+                       CASE
+                           WHEN d.controlfile_included = 'YES' THEN d.pieces
+                           ELSE 0
+                       END)                                                        CF,
+                   SUM (
+                       CASE
+                           WHEN     d.controlfile_included = 'NO'
+                                AND d.backup_type || d.incremental_level = 'D'
+                           THEN
+                               d.pieces
+                           ELSE
+                               0
+                       END)                                                        DF,
+                   SUM (
+                       CASE
+                           WHEN d.backup_type || d.incremental_level = 'I0'
+                           THEN
+                               d.pieces
+                           ELSE
+                               0
+                       END)                                                        I0,
+                   SUM (
+                       CASE
+                           WHEN d.backup_type || d.incremental_level = 'I1'
+                           THEN
+                               d.pieces
+                           ELSE
+                               0
+                       END)                                                        I1,
+                   SUM (CASE WHEN d.backup_type = 'L' THEN d.pieces ELSE 0 END)    L
+              FROM V$BACKUP_SET_DETAILS d
+                   JOIN V$BACKUP_SET s
+                       ON s.set_stamp = d.set_stamp AND s.set_count = d.set_count
+             WHERE s.input_file_scan_only = 'NO'
+          GROUP BY d.session_recid, d.session_stamp) x
+             ON     x.session_recid = j.session_recid
+                AND x.session_stamp = j.session_stamp
+         LEFT OUTER JOIN
+         (  SELECT o.session_recid, o.session_stamp, MIN (inst_id) inst_id
+              FROM GV$RMAN_OUTPUT o
+          GROUP BY o.session_recid, o.session_stamp) ro
+             ON     ro.session_recid = j.session_recid
+                AND ro.session_stamp = j.session_stamp
+WHERE    j.start_time > TRUNC (SYSDATE) - 3
+ORDER BY j.start_time;
+
+prompt
+prompt Tablespace Status
+prompt
+
+col tablespace_name format a15
+col current_gb format 999999
+col max_gb format 999999
+col used_pct format 999999 entmap off
+
+with tbs_data as
+(
+        select
+                a.tablespace_name,
+                round(SUM(a.bytes)/(1024*1024*1024)) CURRENT_GB,
+                round(SUM(decode(b.maxextend, null, A.BYTES/(1024*1024*1024),
+                b.maxextend*8192/(1024*1024*1024)))) MAX_GB,
+                (SUM(a.bytes)/(1024*1024*1024) - round(c.Free/1024/1024/1024)) USED_GB,
+                round((SUM(decode(b.maxextend, null, A.BYTES/(1024*1024*1024),
+                b.maxextend*8192/(1024*1024*1024))) - (SUM(a.bytes)/(1024*1024*1024) -
+                round(c.Free/1024/1024/1024))),2) FREE_GB,
+                round(100*(SUM(a.bytes)/(1024*1024*1024) -
+                round(c.Free/1024/1024/1024))/(SUM(decode(b.maxextend, null, A.BYTES/(1024*1024*1024),
+                b.maxextend*8192/(1024*1024*1024))))) USED_PCT
+        from
+                dba_data_files a,
+                sys.filext$ b,
+                (SELECT
+                               d.tablespace_name ,sum(nvl(c.bytes,0)) Free
+                FROM
+                               dba_tablespaces d,
+                               DBA_FREE_SPACE c
+                WHERE
+                               d.tablespace_name = c.tablespace_name(+)
+                               group by d.tablespace_name) c
+        WHERE
+                a.file_id = b.file#(+)
+                and a.tablespace_name = c.tablespace_name
+        GROUP BY a.tablespace_name, c.Free/1024
+        ORDER BY tablespace_name)
+select tablespace_name,CURRENT_GB, MAX_GB, USED_GB, FREE_GB,
+        case
+        when USED_PCT > 89  then '<p style="text-align:right ;color:red ; background:#f7f7e7">' || USED_PCT || '</p>'
+        else  '<p style="text-align:right ;color:black ; background:#f7f7e7">' || USED_PCT || '</p>'
+        end as USED_PCT
+from sys.tbs_data;
+
+prompt
+prompt Long Running Session Status
+prompt
+
+col username format a15
+col schemaname format a15
+col osuser format a16
+col machine format a20
+col program format a15
+col username format a30
+col start_time entmap off
+
+/*
+
+select
+        case
+        when t.start_time < (select to_char(sysdate - interval '2' hour, 'MM/DD/YY HH24:MI:SS') from dual)
+        then '<p style="text-align:right ;color:red ; background:#f7f7e7">' || t.start_time  || '</p>'
+        else '<p style="text-align:right ; background:#f7f7e7">' || t.start_time  || '</p>'
+        end as start_time,
+t.xid,s.sid,s.serial#,s.username,s.status,s.schemaname,
+s.osuser,s.process,s.machine,s.program,s.module, s.last_call_et,to_char(s.logon_time,'DD/MON/YY HH24:MI:SS') logon_time
+from v$transaction t, v$session s
+where s.saddr = t.ses_addr
+order by start_time;
+
+*/
+select
+        case
+        when t.start_time < (select to_char(sysdate - interval '2' hour, 'MM/DD/YY HH24:MI:SS') from dual)
+        then '<p style="text-align:right ;color:red ; background:#f7f7e7">' || to_char(to_timestamp(t.start_time ,'MM/DD/YY HH24:MI:SS'),'DD-MM-YY HH24:MI:SS') || '</p>'
+        else '<p style="text-align:right ; background:#f7f7e7">' || to_char(to_timestamp(t.start_time ,'MM/DD/YY HH24:MI:SS'),'DD-MM-YY HH24:MI:SS')  || '</p>'
+        end as start_time,
+        s.inst_id,
+t.xid,s.sid,s.serial#,s.username,s.status,s.schemaname,
+s.osuser,s.process,s.machine,s.program,s.module, s.last_call_et,to_char(s.logon_time,'DD-MM-YY HH24:MI:SS') logon_time
+from gv$transaction t, gv$session s
+where s.saddr = t.ses_addr
+and s.type != 'BACKGROUND'
+--and logon_time <= sysdate - interval '1' hour
+and t.start_time < (select to_char(sysdate - interval '30' minute, 'MM/DD/YY HH24:MI:SS') from dual)
+order by t.start_time desc;
+
+
+prompt
+prompt Audit Purge Checks
+prompt
+
+
+col job_name format a30
+col job_action format a50
+col schema_name format a12
+col start_date format a40
+col last_start_date format a40
+col next_start_date format a40
+col next_run_date format a40
+col schedule format a30
+
+select owner as schema_name,
+       job_name,
+       case when job_type is null
+                 then 'PROGRAM'
+            else job_type end as job_type,
+       case when job_type is null
+                 then program_name
+                 else job_action end as job_action,
+       start_date,
+       case when repeat_interval is null
+            then schedule_name
+            else repeat_interval end as schedule,
+       last_start_date,
+       next_run_date,
+       state
+from sys.all_scheduler_jobs
+where job_name like 'CLEANUP_AUDIT_TRAIL_UNIFIED%'
+order by owner,
+         job_name;
+
+set echo off
+set feedback off
+set pages 10000
+break on INST_ID on GROUP_NUMBER
+prompt
+prompt Disk group utilisation
+prompt
+SELECT name, round(free_mb/1024/1024) FREE_TB, round(total_mb/1024/1024) TOTAL_TB, round(100-(free_mb/total_mb*100)) ||'%' as Percent_Used
+     FROM v$asm_diskgroup;
+
+prompt
+prompt Invalid Objects
+prompt
+
+col owner format a10
+col object_name format a40
+set linesize 150
+set pages 999
+
+select owner, object_name, object_type, status
+from dba_objects
+where object_type in  ('VIEW','MATERIALIZED VIEW','PACKAGE','PACKAGE BODY','PROCEDURE')
+and status='INVALID'
+and owner not in ('SYS','AUDSYS')
+order by 1;
+
+prompt
+prompt DDL Changes
+prompt APEX_PUBLIC_USER has been excluded from the return.
+prompt
+
+col event_timestamp format a25
+col os_username format a20
+col userhost format a25
+col dbusername format a20
+col client_program_name format a30
+col action_name format a20
+col UNIFIED_AUDIT_POLICIES format a25
+col object_schema format a20
+col object_name format a40
+
+SELECT TO_CHAR(event_timestamp,'YYYY-MM-DD HH24:MI:SS') EVENT_TIMESTAMP,
+os_username OS_USERNAME,
+userhost USERHOST,
+dbusername DBUSERNAME,
+client_program_name CLIENT_PROGRAM_NAME,
+action_name ACTION_NAME,
+object_schema OBJECT_SCHEMA,
+object_name OBJECT_NAME,
+unified_audit_policies UNIFIED_AUDIT_POLICIES
+FROM unified_audit_trail
+where UNIFIED_AUDIT_POLICIES='AUDIT_DB_SCHEMA_CHANGES'
+and trunc(event_timestamp) > trunc(sysdate)-2
+and (client_program_name not in ('EXCEL.EXE','ISServerExec.exe') and client_program_name not like 'oracle@oraexa01%')
+and DBUSERNAME <> 'APEX_PUBLIC_USER'
+ORDER BY event_timestamp asc;
+
+prompt
+prompt High Temp Usage SQL gt 50GB
+prompt
+select sql_id,max(TEMP_SPACE_ALLOCATED)/(1024*1024*1024) gig
+from DBA_HIST_ACTIVE_SESS_HISTORY
+where
+sample_time > sysdate-1 and
+TEMP_SPACE_ALLOCATED > (50*1024*1024*1024)
+group by sql_id order by sql_id;
+
+prompt
+prompt SQL Regression Checks
+prompt
+
+DEF days_of_history_accessed = '31';
+DEF captured_at_least_x_times = '10';
+DEF captured_at_least_x_days_apart = '5';
+DEF med_elap_microsecs_threshold = '1e4';
+DEF min_slope_threshold = '0.1';
+DEF max_num_rows = '20';
+
+SET lin 200 ver OFF;
+COL row_n FOR A2 HEA '#';
+COL med_secs_per_exec HEA 'Median Secs|Per Exec';
+COL std_secs_per_exec HEA 'Std Dev Secs|Per Exec';
+COL avg_secs_per_exec HEA 'Avg Secs|Per Exec';
+COL min_secs_per_exec HEA 'Min Secs|Per Exec';
+COL max_secs_per_exec HEA 'Max Secs|Per Exec';
+sample_time > sysdate-1 and
+TEMP_SPACE_ALLOCATED > (50*1024*1024*1024)
+group by sql_id order by sql_id;
+
+prompt
+prompt SQL Regression Checks
+prompt
+
+DEF days_of_history_accessed = '31';
+DEF captured_at_least_x_times = '10';
+DEF captured_at_least_x_days_apart = '5';
+DEF med_elap_microsecs_threshold = '1e4';
+DEF min_slope_threshold = '0.1';
+DEF max_num_rows = '20';
+
+SET lin 200 ver OFF;
+COL row_n FOR A2 HEA '#';
+COL med_secs_per_exec HEA 'Median Secs|Per Exec';
+COL std_secs_per_exec HEA 'Std Dev Secs|Per Exec';
+COL avg_secs_per_exec HEA 'Avg Secs|Per Exec';
+COL min_secs_per_exec HEA 'Min Secs|Per Exec';
+COL max_secs_per_exec HEA 'Max Secs|Per Exec';
+COL plans FOR 9999;
+COL sql_text_80 FOR A80;
+
+PRO SQL Statements with "Elapsed Time per Execution" changing over time
+
+WITH
+per_time AS (
+SELECT h.dbid,
+       h.sql_id,
+       SYSDATE - CAST(s.end_interval_time AS DATE) days_ago,
+       SUM(h.elapsed_time_total) / SUM(h.executions_total) time_per_exec
+  FROM dba_hist_sqlstat h,
+       dba_hist_snapshot s
+ WHERE h.executions_total > 0
+   AND s.snap_id = h.snap_id
+   AND s.dbid = h.dbid
+   AND s.instance_number = h.instance_number
+   AND CAST(s.end_interval_time AS DATE) > SYSDATE - &&days_of_history_accessed.
+ GROUP BY
+       h.dbid,
+       h.sql_id,
+       SYSDATE - CAST(s.end_interval_time AS DATE)
+),
+avg_time AS (
+SELECT dbid,
+       sql_id,
+       MEDIAN(time_per_exec) med_time_per_exec,
+       STDDEV(time_per_exec) std_time_per_exec,
+       AVG(time_per_exec)    avg_time_per_exec,
+       MIN(time_per_exec)    min_time_per_exec,
+       MAX(time_per_exec)    max_time_per_exec
+  FROM per_time
+ GROUP BY
+       dbid,
+       sql_id
+HAVING COUNT(*) >= &&captured_at_least_x_times.
+   AND MAX(days_ago) - MIN(days_ago) >= &&captured_at_least_x_days_apart.
+DEF med_elap_microsecs_threshold = '1e4';
+DEF min_slope_threshold = '0.1';
+DEF max_num_rows = '20';
+
+SET lin 200 ver OFF;
+COL row_n FOR A2 HEA '#';
+COL med_secs_per_exec HEA 'Median Secs|Per Exec';
+COL std_secs_per_exec HEA 'Std Dev Secs|Per Exec';
+COL avg_secs_per_exec HEA 'Avg Secs|Per Exec';
+COL min_secs_per_exec HEA 'Min Secs|Per Exec';
+COL max_secs_per_exec HEA 'Max Secs|Per Exec';
+COL plans FOR 9999;
+COL sql_text_80 FOR A80;
+
+PRO SQL Statements with "Elapsed Time per Execution" changing over time
+
+WITH
+per_time AS (
+SELECT h.dbid,
+       h.sql_id,
+       SYSDATE - CAST(s.end_interval_time AS DATE) days_ago,
+       SUM(h.elapsed_time_total) / SUM(h.executions_total) time_per_exec
+  FROM dba_hist_sqlstat h,
+       dba_hist_snapshot s
+ WHERE h.executions_total > 0
+   AND s.snap_id = h.snap_id
+   AND s.dbid = h.dbid
+   AND s.instance_number = h.instance_number
+   AND CAST(s.end_interval_time AS DATE) > SYSDATE - &&days_of_history_accessed.
+ GROUP BY
+       h.dbid,
+       h.sql_id,
+       SYSDATE - CAST(s.end_interval_time AS DATE)
+),
+avg_time AS (
+SELECT dbid,
+       sql_id,
+       MEDIAN(time_per_exec) med_time_per_exec,
+       STDDEV(time_per_exec) std_time_per_exec,
+       AVG(time_per_exec)    avg_time_per_exec,
+       MIN(time_per_exec)    min_time_per_exec,
+       MAX(time_per_exec)    max_time_per_exec
+  FROM per_time
+ GROUP BY
+       dbid,
+       sql_id
+HAVING COUNT(*) >= &&captured_at_least_x_times.
+   AND MAX(days_ago) - MIN(days_ago) >= &&captured_at_least_x_days_apart.
+   AND MEDIAN(time_per_exec) > &&med_elap_microsecs_threshold.
+),
+time_over_median AS (
+SELECT h.dbid,
+       h.sql_id,
+       h.days_ago,
+       (h.time_per_exec / a.med_time_per_exec) time_per_exec_over_med,
+       a.med_time_per_exec,
+       a.std_time_per_exec,
+       a.avg_time_per_exec,
+       a.min_time_per_exec,
+       a.max_time_per_exec
+  FROM per_time h, avg_time a
+ WHERE a.sql_id = h.sql_id
