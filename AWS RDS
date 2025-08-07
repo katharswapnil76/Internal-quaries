@@ -1,1 +1,77 @@
 
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.Oracle.CommonDBATasks.System.html#Appendix.Oracle.CommonDBATasks.KillingSession
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Monitoring.html
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Troubleshooting.html#CHAP_Troubleshooting.Storage
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIOPS.StorageTypes.html
+https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/managing-tablespaces.html
+https://repost.aws/knowledge-center/storage-full-rds-cloudwatch-alarm
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIOPS.StorageTypes.html#USER_PIOPS.Autoscaling
+https://repost.aws/knowledge-center/rds-oracle-storage-optimization
+https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.Oracle.CommonDBATasks.Database.html#Appendix.Oracle.CommonDBATasks.CreatingTablespacesAndDatafiles
+Oracle database log files - Amazon Relational Database Service
+Identify the root cause for a Multi-AZ failover and restart of your RDS instance | AWS re:Post (repost.aws)
+
+Overview of parameter groups - Amazon Relational Database Service
+Modify the values of an Amazon RDS DB parameter group | AWS re:Post (repost.aws)
+Modifying an Amazon RDS DB instance - Amazon Relational Database Service
+Amazon RDS for Oracle database log files - Amazon Relational Database Service
+Security auditing in Amazon RDS for Oracle: Part 2 | AWS Database Blog
+Configuring unified auditing for Oracle Database - Amazon Relational Database Service
+
+SNS topic :
+Creating an Amazon SNS topic - Amazon Simple Notification Service
+Viewing and listing database log files - Amazon Relational Database Service
+Subscribing to Amazon RDS event notification - Amazon Relational Database Service
+Working with Amazon RDS event notification - Amazon Relational Database Service
+
+STATSPACK :
+==========
+Yet Another Oracle DBA Blog: Installing statspack on an Oracle RDS on Amazon Web Services
+
+
+Listener : 
+https://aws.amazon.com/blogs/database/resolving-non-responsive-connection-issue-to-on-premises-oracle-multitenant-architecture-database-having-local-listeners-behind-firewall-from-the-cloud/
+
+select * from V$DIAG_ALERT_EXT ; --where MESSAGE_TEXT like '%start%';
+select ORIGINATING_TIMESTAMP,MESSAGE_TEXT from V$DIAG_ALERT_EXT where ORIGINATING_TIMESTAMP > sysdate -20 ;
+alter session set nls_date_format='YYYY/MM/DD HH24:MI:SS';
+select * from v$instance; 2024/07/08 15:17:27
+select * from v$database;
+select count(*) from gv$session;
+show parameter uniq
+select * from dba_users where username='PERFSTAT';
+SELECT SNAP_ID, SNAP_TIME FROM STATS$SNAPSHOT ORDER BY 1;
+select OBJECT_NAME,OBJECT_TYPE from dba_objects where owner='PERFSTAT';
+SELECT rdsadmin.rdsadmin_adrci_util.list_adrci_incidents AS task_id FROM DUAL;
+SELECT rdsadmin.rdsadmin_adrci_util.show_adrci_tracefile AS task_id FROM DUAL;
+VAR task_id VARCHAR2(80);
+EXEC :task_id := rdsadmin.rdsadmin_adrci_util.show_adrci_tracefile;
+SELECT * FROM TABLE(rdsadmin.rds_file_util.read_text_file('BDUMP', 'dbtask-'||:task_id||'.log')) WHERE TEXT LIKE '%/alert_%';
+SELECT * FROM TABLE(rdsadmin.rds_file_util.read_text_file('BDUMP', 'alert_OLAP.log.2024-06-24')) ;
+     
+select * from v$version;
+show parameter control
+
+
+To retrieve the execution plan, invoke a query similar to the following:
+
+SELECT lpad(' ', 1 * ( depth - 1 ))     || operation AS operation,
+       object_name,
+       cardinality,
+       bytes,
+       cost
+FROM   stats$sql_plan
+WHERE  plan_hash_value IN(SELECT plan_hash_value
+                          FROM   stats$sql_plan_usage
+                          WHERE  old_hash_value = OLD_HASH_VALUE
+                                 AND snap_id BETWEEN BEGIN_SNAP_ID AND END_SNAP_ID
+                                 AND plan_hash_value > 0)
+ORDER  BY plan_hash_value, id;
+
+From <https://repost.aws/knowledge-center/rds-oracle-view-plans-statspack> 
+
+
+To get the details of the trace files in ADW :
+
+Select * from dba_directories.
+
