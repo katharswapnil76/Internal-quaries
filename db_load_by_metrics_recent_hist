@@ -1,0 +1,104 @@
+	set arraysize 5000
+	set termout off
+	set echo off verify off
+
+	COLUMN blocksize NEW_VALUE _blocksize NOPRINT
+	select distinct block_size blocksize from v$datafile;
+
+	COLUMN dbid NEW_VALUE _dbid NOPRINT
+	select dbid from v$database;
+
+	COLUMN instancenumber NEW_VALUE _instancenumber NOPRINT
+	select instance_number instancenumber from v$instance;
+
+	ttitle center 'Database Performance Metrics' skip 2
+	set pagesize 50000
+	set linesize 250
+
+	col AAS          format 99.00			heading "A|A|S"
+	col Sessions     format 9999			heading "Sess"
+	col Logons       format 9999			heading "Log|CNT"
+	col OSProcs	     format 99			    heading "OS|Load|Avg"
+	col CPUSec		 format 999.00			heading "CPU|Sec"
+	col DBTIMESec	 format 99999.00		heading "DB|Sec"
+	col CallsSec	 format 9999			heading "User|Calls|Sec"
+	col SQLResponseSec format 99			heading "SQL|Resp|Sec"
+	col CommitsSec	format 99999			heading "Commit|Sec"
+	col BlocksSec	format 99999			heading "Block|Change|Sec"
+	col ExecSec		format 99999			heading "Exec|Sec"
+	col HParseSec	format 99999			heading "HPARSE|Sec"
+	col Cursors		format 99999			heading "Open|Cursor|Count"
+	col PGAUsed		format 99999			heading "PGA|Used|MB"
+	col TempUsed	format 99999			heading "Temp|Used|MB"
+	col PReadsSec	format 99999999			heading "PReads|Direct|Sec"
+	col LreadsSec	format 99999999			heading "Logical|Reads|Sec"
+	col SpoolFree%  format 999			heading "SPool|Free%"
+	col NworkMB/s	format 99999		heading "Nwork|MB|Sec"
+	col PReadsMB/s	format 9999	heading "PREADS|MB|Sec"
+	col PWritesMB/s	format 9999	heading "PWRITES|MB|Sec"
+	col TotalMB/s   format 999999999	heading "Total|I/O|MB|Sec"
+	col FullScans   format 999	heading "FTab|Scans|Sec"
+	Col RedoSec     format 999	heading "Redo|MB|Sec"
+	col LockWait    format 999  heading "Lock|Waits|Sec"
+
+	 set pagesize 120;
+	 set linesize 200;
+	 col day for a8;
+	break on metric_name;
+	 select
+	   snap_id,to_char(BEGIN_TIME,'DD-MON HH24') SNAPTIME,
+	   max(decode(metric_name,'Average Active Sessions',MAXVAL,0)) "AAS",
+	   Max(decode(metric_name,'Current Logons Count',MAXVAL,0)) "Sessions",
+	   max(decode(metric_name,'Session Count',MAXVAL,0)) "Logons",
+	   Max(decode(metric_name,'Current OS Load',MAXVAL,0)) "OSProcs",
+	   max(decode(metric_name,'CPU Usage Per Sec',MAXVAL,0)) "CPUSec",
+	   max(decode(metric_name,'Database Time Per Sec',MAXVAL,0)) "DBTIMESec",
+	   max(decode(metric_name,'User Calls Per Sec',MAXVAL,0)) "CallsSec",
+	   max(decode(metric_name,'SQL Service Response Time',MAXVAL,0)) "SQLResponseSec",
+	   max(decode(metric_name,'User Commits Per Sec',MAXVAL,0)) "CommitsSec",
+	   max(decode(metric_name,'DB Block Changes Per Sec',MAXVAL,0)) "BlocksSec",
+	   max(decode(metric_name,'Redo Generated Per Sec',MAXVAL/1024/1024,0)) "RedoSec",
+	   max(decode(metric_name,'Executions Per Sec',MAXVAL,0)) "ExecSec",
+	   max(decode(metric_name,'Hard Parse Count Per Sec',MAXVAL,0)) "HParseSec",
+	   max(decode(metric_name,'Current Open Cursors Count',MAXVAL,0)) "Cursors",
+	   max(decode(metric_name,'Total PGA Allocated',MAXVAL/1024/1024,0)) "PGAUsed",
+	   max(decode(metric_name,'Temp Space Used',MAXVAL/1024/1024,0)) "TempUsed",
+	   max(decode(metric_name,'Physical Reads Direct Per Sec',MAXVAL,0)) "PReadsSec",
+	   max(decode(metric_name,'Logical Reads Per Sec',MAXVAL,0)) "LreadsSec",
+	   max(decode(metric_name,'Shared Pool Free %',MAXVAL,0)) "SpoolFree%",
+	   max(decode(metric_name,'Enqueue Waits Per Sec',MAXVAL,0)) "Lockwait",
+	   max(decode(metric_name,'Long Table Scans Per Sec',MAXVAL/1024/1024,0)) "FullScans",
+	   max(decode(metric_name,'Network Traffic Volume Per Sec',MAXVAL/1024/1024,0)) "NworkMB/s",
+	   max(decode(metric_name,'Physical Read Bytes Per Sec',MAXVAL/1024/1024,0)) "PReadsMB/s",
+	   max(decode(metric_name,'Physical Write Bytes Per Sec',MAXVAL/1024/1024,0)) "PWritesMB/s",
+	   max(decode(metric_name,'Physical Read Bytes Per Sec',MAXVAL/1024/1024,0))+
+	   max(decode(metric_name,'Physical Write Bytes Per Sec',MAXVAL/1024/1024,0)) "TotalMB/s"
+	from dba_hist_sysmetric_summary A
+	where BEGIN_TIME > trunc(sysdate) - 1
+	and a.metric_name in 
+	('Average Active Sessions',
+	'Current Logons Count',
+	'Session Count',
+	'Host CPU Utilization (%)',
+	'Session Count',
+	'Current OS Load',
+	'CPU Usage Per Sec',
+	'Database Time Per Sec',
+	'User Calls Per Sec',
+	'SQL Service Response Time',
+	'User Commits Per Sec',
+	'DB Block Changes Per Sec',
+	'Executions Per Sec',
+	'Hard Parse Count Per Sec',
+	'Current Open Cursors Count',
+	'Total PGA Allocated',
+	'Temp Space Used',
+	'Physical Reads Direct Per Sec',
+	'Logical Reads Per Sec',
+	'Network Traffic Volume Per Sec',
+	'Physical Read Bytes Per Sec',
+	'Physical Write Bytes Per Sec',
+	'Long Table Scans Per Sec','Enqueue Waits Per Sec','Shared Pool Free %','Redo Generated Per Sec'
+	)
+	group by snap_id, to_char(BEGIN_TIME,'DD-MON HH24')
+	order by to_char(BEGIN_TIME,'DD-MON HH24')
