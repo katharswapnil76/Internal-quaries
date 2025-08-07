@@ -1,0 +1,293 @@
+
+
+ 
+Revision History
+
+Date	Name	Version	Revision Reference
+20/07/2016	Helen Uszak	0.1	Initial draft
+21/11/2016	Andrew Harrison	0.11	Minor modification post DR/BC test clear logs.
+01/09/2017	Andrew Harrison	0.12	If pfile/control file available is not require.
+18/09/2017	Andrew Harrison	0.13	Change mount to nomount
+17/09/2017	Andrew Harrison	0.14	Database incarnation check
+
+
+Distribution List
+
+Copy	Name	Organisation
+1	On file	Inoapps
+2		
+3		
+		
+
+
+Company Confidentiality 
+
+This document is proprietary to Inoapps Ltd and is intended for the exclusive use of Canaccord Genuity.  Under no circumstances should this document be given to any unauthorised individual, supplier or company, nor should any duplicate be made without the express permission of Inoapps Ltd.
+ 
+Contents
+1.	Recreate D-1 Environment	4
+1.1.	Create D-1 Standby Database	4
+1.2.	Configure Data Guard	5
+1.3.	RMAN Configuration	7
+1.4.	Enable Flashback Database	9
+1.5.	Script Changes	9
+
+
+1.	RECREATE D-1 ENVIRONMENT
+
+1.1.	CREATE D-1 STANDBY DATABASE
+
+There is no need to create a standby controlfile if active duplication is used.  
+
+Source the environment and mount the database..
+
+. oraenv
+aqdmo01
+
+sqlplus /nolog
+conn / as sysdba;
+startup nomount;
+
+Active duplication from standby server;
+
+Run as a script in background (nohup &) with logfile (no need is quick). 
+
+cat aqdmo01_duplicate.sh
+#!/bin/sh
+DATE=`date +%Y%m%d_%H%M`;export DATE
+ORACLE_HOME=/u02/app/oracle/product/12.1.0.2.160119-84;export ORACLE_HOME
+ORACLE_SID=aqdmo01;export ORACLE_SID
+PATH=$PATH:$ORACLE_HOME/bin;export PATH
+$ORACLE_HOME/bin/rman target sys/aaamanager@aqprd01_standby AUXILIARY sys/aaamanager@aqdmo01 @$HOME/inoapps/12cUpgrade/aqdmo01_duplicate.sql log=$HOME/inoapps/12cUpgrade/aqdmo01_duplicate.log_${DATE}
+
+
+cat aqdmo01_duplicate.sql
+run {
+allocate channel tgt1 type disk;
+allocate channel tgt2 type disk;
+allocate auxiliary channel aux1 type disk;
+duplicate target database for standby from active database;
+}
+exit;
+
+
+nohup /export/home/oracle/12cUpgrade/aqdmo01_duplicate.sh &
+
+Note: do not specify nofilenamecheck here as duplicating to same host. 
+
+
+
+
+1.2.	CONFIGURE DATA GUARD
+
+Standby Redo Logs
+
+The duplicate process created standby redo log groups 4, 5, 6 and 7 in the database, there was a problem renaming group 4 (was being written to in standby from primary at the time of the rename at the end of the duplicate);
+
+4         STANDBY	/u08/oradata/aqprd01/standby_redo04a.log
+4         STANDBY	/u09/oradata/aqprd01/standby_redo04b.log
+5         STANDBY	/u02/app/oracle/product/12.1.0.2.160119-84/dbs/broken2
+5         STANDBY	/u02/app/oracle/product/12.1.0.2.160119-84/dbs/broken3
+6         STANDBY	/u02/app/oracle/product/12.1.0.2.160119-84/dbs/broken4
+6         STANDBY	/u02/app/oracle/product/12.1.0.2.160119-84/dbs/broken5
+7         STANDBY	/u02/app/oracle/product/12.1.0.2.160119-84/dbs/broken6
+7         STANDBY	/u02/app/oracle/product/12.1.0.2.160119-84/dbs/broken7
+
+
+These were dropped from the database with recovery cancelled;
+
+alter database drop standby logfile group 4; - errored see below
+alter database drop standby logfile group 5;
+alter database drop standby logfile group 6;
+alter database drop standby logfile group 7;
+
+
+SQL> alter database drop standby logfile group 4;
+alter database drop standby logfile group 4
+*
+ERROR at line 1:
+ORA-00261: log 4 of thread 1 is being archived or modified
+ORA-00312: online log 4 thread 1: '/u08/oradata/aqprd01/standby_redo04a.log'
+ORA-00312: online log 4 thread 1: '/u09/oradata/aqprd01/standby_redo04b.log'
+
+
+SQL> select * from v$standby_log;
+select * from v$standby_log
+              *
+ERROR at line 1:
+ORA-00310: archived log contains sequence 93607; sequence 93603 required
+ORA-00334: archived log: '/u09/oradata/aqprd01/standby_redo04b.log'
+
+
+Copied /u08/oradata/aqprd01/standby_redo04a.log to /u22/oradata/aqdmo01/standby_redo04a.log and /u23/oradata/aqdmo01/standby_redo04b.log.  Switched log on prod so that it was now writing into group 5 not group 4.  Rename, select and drop commands below now work OK; 
+
+alter system set standby_file_management=MANUAL scope=both;
+
+alter database rename file '/u08/oradata/aqprd01/standby_redo04a.log' to '/u22/oradata/aqdmo01/standby_redo04a.log';
+
+alter database rename file '/u09/oradata/aqprd01/standby_redo04b.log' to '/u23/oradata/aqdmo01/standby_redo04b.log';
+
+select * from v$logfile;
+select * from v$standby_log;
+alter database drop standby logfile group 4;
+
+rm /u22/oradata/aqdmo01/standby_redo04a.log /u23/oradata/aqdmo01/standby_redo04b.log
+
+If this method doesn’t work do the following.
+
+SQL> alter database clear logfile group 4;
+SQL> alter database clear logfile group 7;
+SQL> alter database clear logfile group 5;
+SQL> alter database clear logfile group 6;
+
+Change standby file management to AUTO;
+alter system set standby_file_management=AUTO scope=both;
+
+Create standby redo logs in the cascaded standby database.  Create them with the same size and number of members as the online redo logs in the original standby database, and with one more group.  Use the same locations as the standby database online redo logs. 
+
+For example;
+SQL> alter database add standby logfile group 8 ('/u22/oradata/aqdmo01/standby_redo08a.log','/u23/oradata/aqdmo01/standby_redo08b.log') size 1073741824;
+
+Also create standby redo log groups 9, 10 and 11. 
+
+
+The standby redo logs should be archived.  To configure archiving of the standby redo logs, there needs to be a LOG_ARCHIVE_DEST_n parameter with a VALID_FOR clause that includes (STANDBY_LOGFILE, STANDBY_ROLE).  The LOG_ARCHIVE_DEST_1 parameter already defined for the standby database includes all log files, all roles and so they will be archived to the FRA. 
+
+
+Enable Redo Transport and Apply
+
+Enable destination on original standby;
+alter system set log_archive_dest_state_3=enable scope=both;
+
+
+Check Protection
+
+Query the protection mode in the original standby database, it should be maximum performance; 
+SQL> select protection_mode,protection_level,database_role,name from v$database;
+
+Query the protection mode in the D-1 standby database, it is maximum performance; 
+SQL> select protection_mode,protection_level,database_role,name from v$database;
+
+
+Start recovery logged in to the new standby database;
+SQL> alter database recover managed standby database disconnect;
+SQL> exit
+
+
+1.3.	RMAN CONFIGURATION
+
+CONFIGURE CONTROLFILE AUTOBACKUP OFF;
+CONFIGURE ARCHIVELOG DELETION POLICY TO NONE;
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F';
+
+
+RMAN> show all;
+
+RMAN configuration parameters for database with db_unique_name AQDMO01 are:
+CONFIGURE RETENTION POLICY TO REDUNDANCY 1;
+CONFIGURE BACKUP OPTIMIZATION OFF; # default
+CONFIGURE DEFAULT DEVICE TYPE TO DISK; # default
+CONFIGURE CONTROLFILE AUTOBACKUP OFF;
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F';
+CONFIGURE DEVICE TYPE DISK PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
+CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE MAXSETSIZE TO UNLIMITED; # default
+CONFIGURE ENCRYPTION FOR DATABASE OFF; # default
+CONFIGURE ENCRYPTION ALGORITHM 'AES128'; # default
+CONFIGURE COMPRESSION ALGORITHM 'BASIC' AS OF RELEASE 'DEFAULT' OPTIMIZE FOR LOAD TRUE ; # default
+CONFIGURE RMAN OUTPUT TO KEEP FOR 7 DAYS; # default
+CONFIGURE ARCHIVELOG DELETION POLICY TO NONE;
+CONFIGURE SNAPSHOT CONTROLFILE NAME TO '/u02/app/oracle/product/12.1.0.2.160119-84/dbs/snapcf_aqdmo01.f'; # default
+
+If no issue is found in alert log ORA-19906 and/or ORA-19909 at standby site (Doc ID 1509932.1).
+
+cd /u02/app/oracle/admin/aqdmo01/diag/rdbms/aqdmo01/aqdmo01/trace
+grep ORA-19909  alert_aqdmo01.log
+
+if we get the following resolve if not go to next step
+alert_aqdmo01.log:ORA-19909: datafile 1 belongs to an orphan incarnation
+
+To resolve the issue, at the standby site:
+
+Reset the incarnation to the previous incarnation that matches the primary.  For example:
+
+This is the primary database's incarnation: 
+
+rman target /
+RMAN> list incarnation of database;
+
+using target database control file instead of recovery catalog
+
+List of Database Incarnations
+DB Key  Inc Key DB Name  DB ID            STATUS  Reset SCN  Reset Time
+------- ------- -------- ---------------- --- ---------- ----------
+1       1       AQPRD01  4035256721       PARENT  1          29-OCT-2014
+2       2       AQPRD01  4035256721       CURRENT 4596612    20-JAN-2015
+ 
+This is the standby database's incarnation:
+
+rman target /
+RMAN> list incarnation of database;
+
+using target database control file instead of recovery catalog
+
+List of Database Incarnations
+
+DB Key  Inc Key DB Name  DB ID            STATUS  Reset SCN  Reset Time
+------- ------- -------- ---------------- --- ---------- ----------
+1       1       AQPRD01  4035256721       PARENT  1          29-OCT-2014
+2       2       AQPRD01  4035256721       PARENT  4596612    20-JAN-2015
+3       3       AQPRD01  4035256721       ORPHAN  8955941597612 11-NOV-2016
+4       4       AQPRD01  4035256721       CURRENT 8957176263214 09-DEC-2016
+
+In standby, execute:
+RMAN> reset database to incarnation 2;
+
+If
+ORA-19910: can not change recovery target incarnation in control file
+then 
+sqlplus /nolog
+SQL>conn / as sysdba;
+SQL>shutdown immediate;
+SQL>startup mount;
+SQL>exit
+
+rman target /
+RMAN> reset database to incarnation 2;
+
+sqlplus /nolog
+SQL>conn / as sysdba;
+SQL>shutdown immediate;
+SQL>startup;
+SQL>exit
+
+ 
+
+1.4.	ENABLE FLASHBACK DATABASE
+
+Enable flashback database on the standby database;
+
+SQL> alter database recover managed standby database cancel;
+SQL> alter system set db_flashback_retention_target=4320 scope=both; # 3 days
+SQL> alter database flashback on;
+SQL> alter database recover managed standby database disconnect;
+
+SELECT THREAD#, SEQUENCE#, FIRST_CHANGE#, NEXT_CHANGE#, APPLIED FROM V$ARCHIVED_LOG;
+
+Prior to the upgrade/recreation, aqdmo02 listener is using port 1526 but local_listener is using port 1525, the same port as the aqdmo01 listener.  It has been working OK so will not change it now.  
+
+
+1.5.	SCRIPT CHANGES 
+
+Changes to /export/home/oracle/inoapps/dmo/dmo_refresh.ksh;
+
+
+export ORACLE_HOME=/u02/app/oracle/product/12.1.0.2.160119-84
+
+export PATH=/usr/xpg4/bin:/usr/bin:/bin:/usr/openwin/bin:/bin:/sbin:/usr/sbin:/usr/ucb:/usr/ccs/bin:/usr/local/bin:/usr/ucb:/u02/app/oracle/product/12.1.0.2.160119-84/bin
+
+if grep ORA- $LOGFILE | grep -v 'ORA-01109' > /dev/null
+
+if grep ORA- $LOGFILE | grep -v 'ORA-01109' > /dev/null
+
