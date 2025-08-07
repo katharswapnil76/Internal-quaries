@@ -1,0 +1,270 @@
+How to Find Fragmentation for Tables and LOBs (Doc ID 2132004.1)
+How To Reclaim Wasted Space on The Segment (Table, Index and LOB) and Tablespace Levels (Doc ID 1682748.1)
+How to Determine what storage is used in a LOBSEGMENT and should it be shrunk / reorganized? (Doc ID 1453350.1)
+How to Shrink (make less sparse) a LOB (BASICFILE or SECUREFILE)? (Doc ID 1451124.1)
+
+Mandatory
+=========
+Init.ora parameter 'Compatible' must be >=10.0
+
+Shrink operations can be performed only on segments in locally managed 
+tablespaces with automatic segment space management (ASSM). 
+
+Large segment in the tablespace :
+------------------------------------
+col owner for a15
+col segment_name for a35
+col tablespace_name for a20
+select owner,segment_name,segment_type,tablespace_name,round(sum(bytes)/1024/1024/1024,2) SIZE_IN_GB 
+from DBA_SEGMENTS
+where BYTES/1024/1024/1024 > 5 and tablespace_name='&TABLESPACE_NAME'
+group by owner,segment_name,segment_type,tablespace_name
+order by owner,round(sum(bytes)/1024/1024/1024,2);
+
+How it works
+============
+
+1. Enable row movement for the table.
+SQL>  ALTER TABLE user_name.table_name ENABLE ROW MOVEMENT;
+
+2. Shrink table but don't want to shrink HWM (High Water Mark).
+SQL>  ALTER TABLE user_name.table_name SHRINK SPACE COMPACT;
+
+3. Shrink table and HWM too.
+SQL>  ALTER TABLE user_name.table_name SHRINK SPACE;
+
+4. Shrink table and all dependent index too.
+SQL>  ALTER TABLE user_name.table_name SHRINK SPACE CASCADE;
+
+5. Shrink table under MView.
+SQL>  ALTER TABLE <table name> SHRINK SPACE;
+
+6. Shrink Index only.
+SQL>  ALTER INDEX <index nam> SHRINK SPACE;
+
+Restrictions on the shrink_clause :
+==================================
+1. Moving rows can cause problem with rowid based triggers.
+2. Rowid materialized views must be rebuilt after a shrink operation.
+3. The shrinking process is only available for objects in tablespaces with automatic segment-space management enabled.
+4. You can't combine the SHRINK SPACE clause with any other ALTER TABLE clauses.
+5. You can't shrink a cluster or a clustered table.
+6. You can't shrink any object with a LONG column.
+7. You can't shrink tables with dependent function-based indexes, domain indexes, or bitmap join indexes.
+8. You can't shrink tables that are the master table of an ON COMMIT materialized view
+9. Mapping tables of index-organized tables are not affected by a shrink.
+10. Shrinks can't be used for compressed tables, except those using Advanced Row Compression (ROW STORE COMPRESS ADVANCED).
+11. The shrink operation against a table doesn't cascade to the LOB segments. They need to handled separately.
+12. You can't shrink securefile LOB segments.
+13. Changing the arrangement of rows in a table can have a negative impact on performance in some circumstances. Test thoroughly before making any decisions.
+14. After any structural change, like a move, remember to check for unusuable indexes. You can use the unusuable_indexes.sql script to find them. If you have any, rebuild them.
+
+Dependency Maintenance and Restrictions on Shrink
+=================================================
+The only dependency that will be taken care of during segment shrink is the index. 
+The indexes will not be in an unusable state after shrink. But still check once 
+
+Availability
+============
+Segment shrink is done online, thereby it increases the availability of the object. 
+While conventional DML operations can coexist with segment shrink, parallel DMLs 
+cannot. 
+
+Enter schema name in which you find top 25 fragmented tables.(We will not get the details of LOB here )
+-------------------------------------------------------------
+select * from (
+select owner,table_name,round((blocks*8),2) "size (kb)" ,
+round((num_rows*avg_row_len/1024),2) "actual_data (kb)",
+(round((blocks*8),2) - round((num_rows*avg_row_len/1024),2)) "wasted_space (kb)", ((round((blocks * 8), 2) - round((num_rows * avg_row_len / 1024), 2)) /
+round((blocks * 8), 2)) * 100 - 10 "reclaimable space % "
+from dba_tables
+where owner in ('&SCHEMA_NAME' ) and (round((blocks*8),2) > round((num_rows*avg_row_len/1024),2))
+order by 5 desc ) where rownum < 10;
+
+Check in percentage of table fragmentation :
+-------------------------------------------
+select table_name,avg_row_len,round(((blocks*16/1024)),2)||'MB' "TOTAL_SIZE",
+round((num_rows*avg_row_len/1024/1024),2)||'Mb' "ACTUAL_SIZE",
+round(((blocks*16/1024)-(num_rows*avg_row_len/1024/1024)),2) ||'MB' "FRAGMENTED_SPACE",
+(round(((blocks*16/1024)-(num_rows*avg_row_len/1024/1024)),2)/round(((blocks*16/1024)),2))*100 "percentage"
+from all_tables WHERE table_name='&TABLE_NAME';
+
+Check the physical size of tables occupied in datafiles :
+----------------------------------------------------------
+
+Select table_name, round((blocks*8)/1024,2)||'MB' "size" from dba_tables where table_name = 'EMP' and owner='SCOTT';
+
+Check the actual size of table data present in it
+--------------------------------------------------
+select table_name, round((num_rows*avg_row_len/1024/1024),2)||'MB' "size" from dba_tables where table_name = 'EMP' 
+and owner='SCOTT';
+
+To check the fragmentation in the table :
+=========================================
+
+set serveroutput on
+declare
+v_unformatted_blocks number;
+v_unformatted_bytes number;
+v_fs1_blocks number;
+v_fs1_bytes number;
+v_fs2_blocks number;
+v_fs2_bytes number;
+v_fs3_blocks number;
+v_fs3_bytes number;
+v_fs4_blocks number;
+v_fs4_bytes number;
+v_full_blocks number;
+v_full_bytes number;
+begin
+dbms_space.space_usage ('<schema>', '<table name>', 'TABLE', v_unformatted_blocks,
+v_unformatted_bytes, v_fs1_blocks, v_fs1_bytes, v_fs2_blocks, v_fs2_bytes,
+v_fs3_blocks, v_fs3_bytes, v_fs4_blocks, v_fs4_bytes, v_full_blocks, v_full_bytes);
+dbms_output.put_line('Unformatted Blocks = '||v_unformatted_blocks);
+dbms_output.put_line('FS1 Blocks = '||v_fs1_blocks);
+dbms_output.put_line('FS2 Blocks = '||v_fs2_blocks);
+dbms_output.put_line('FS3 Blocks = '||v_fs3_blocks);
+dbms_output.put_line('FS4 Blocks = '||v_fs4_blocks);
+dbms_output.put_line('Full Blocks = '||v_full_blocks);
+end;
+/
+
+unformatted_blocks : Total number of blocks unformatted. unformatted blocks are blocks that are available for immediate use 
+(below the true high water mark) but haven't yet had any data. when the table says I'm full, we pull a bunch of blocks down 
+into the table from above the HWM and they would all be unformatted until you use them.
+fs1_blocks : Number of blocks having at least 0 to 25% free space
+fs2_blocks : Number of blocks having at least 25 to 50% free space
+fs3_blocks : Number of blocks having at least 50 to 75% free space
+fs4_blocks : Number of blocks having at least 75 to 100% free space
+ful1_blocks : Total number of blocks full in the segment
+
+Fragmentation is considered to be high if there are too many fs1, fs2 and fs3 blocks ( mostly fs1 and fs2 blocks) because these
+ blocks might not allow inserts despite the free space and segment might need to extend when new inserts come in.
+From a space-regain perspective, if there are too many fs3, fs4 blocks ( especially fs4 blocks ) and the possibility of future 
+inserts is minimal, re-organizing the table will release lots of space.
+Re-organizing the table compacts the blocks thereby increasing FULL blocks, reducing fs1, fs2,fs3 and fs4 blocks and thus 
+reducing the total number of blocks.
+
+
+To find fragmentation at partition level :
+=========================================
+set serveroutput on
+declare
+v_unformatted_blocks number;
+v_unformatted_bytes number;
+v_fs1_blocks number;
+v_fs1_bytes number;
+v_fs2_blocks number;
+v_fs2_bytes number;
+v_fs3_blocks number;
+v_fs3_bytes number;
+v_fs4_blocks number;
+v_fs4_bytes number;
+v_full_blocks number;
+v_full_bytes number;
+begin
+dbms_space.space_usage ('<schema>', '<table name>', 'TABLE PARTITION', v_unformatted_blocks,
+v_unformatted_bytes, v_fs1_blocks, v_fs1_bytes, v_fs2_blocks, v_fs2_bytes,
+v_fs3_blocks, v_fs3_bytes, v_fs4_blocks, v_fs4_bytes, v_full_blocks, v_full_bytes, <partition name>);
+dbms_output.put_line('Unformatted Blocks = '||v_unformatted_blocks);
+dbms_output.put_line('FS1 Blocks = '||v_fs1_blocks);
+dbms_output.put_line('FS2 Blocks = '||v_fs2_blocks);
+dbms_output.put_line('FS3 Blocks = '||v_fs3_blocks);
+dbms_output.put_line('FS4 Blocks = '||v_fs4_blocks);
+dbms_output.put_line('Full Blocks = '||v_full_blocks);
+end;
+/
+
+Securefile LOBs :
+==================
+set serveroutput on
+declare
+v_segment_size_blocks number;
+v_segment_size_bytes number;
+v_used_blocks number;
+v_used_bytes number;
+v_expired_blocks number;
+v_expired_bytes number;
+v_unexpired_blocks number;
+v_unexpired_bytes number;
+begin
+dbms_space.space_usage ('<owner>', '<securefile segment name>', 'LOB', v_segment_size_blocks, v_segment_size_bytes,
+ v_used_blocks, v_used_bytes, v_expired_blocks, v_expired_bytes, v_unexpired_blocks, v_unexpired_bytes);
+dbms_output.put_line('Segment size in blocks = '||v_segment_size_blocks);
+dbms_output.put_line('Used Blocks = '||v_used_blocks);
+dbms_output.put_line('Expired Blocks = '||v_expired_blocks);
+dbms_output.put_line('Unxpired Blocks = '||v_unexpired_blocks);
+end;
+/
+segment_size_blocks : Number of blocks allocated to the segment
+used_blocks : Number blocks allocated to the LOB that contains active data
+expired_blocks : Number of expired blocks used by the LOB to keep version data
+unexpired_blocks : Number of unexpired blocks used by the LOB to keep version data
+
+Expired blocks and unexpired blocks contain UNDO data and will be reused.
+
+set serveroutput on
+declare
+	 l_segment_size_blocks NUMBER;
+     l_segment_size_bytes NUMBER;
+     l_used_blocks NUMBER;
+     l_used_bytes NUMBER;
+     l_expired_blocks NUMBER;
+     l_expired_bytes NUMBER;
+     l_unexpired_blocks NUMBER;
+     l_unexpired_bytes NUMBER;
+     l_unused_blocks NUMBER;
+     l_unused_bytes NUMBER;
+     l_non_data_blocks NUMBER;
+     l_non_data_bytes NUMBER;
+
+     BEGIN
+          DBMS_SPACE.SPACE_USAGE( segment_owner => '&segment_owner',
+                                  segment_name => '&segment_name',
+                                  segment_type => 'LOB',
+                                  segment_size_blocks => l_segment_size_blocks,
+                                  segment_size_bytes => l_segment_size_bytes,
+                                  used_blocks => l_used_blocks,
+                                  used_bytes => l_used_bytes,
+                                  expired_blocks => l_expired_blocks,
+                                  expired_bytes => l_expired_bytes,
+                                  unexpired_blocks => l_unexpired_blocks,
+                                  unexpired_bytes => l_unexpired_bytes
+           );
+
+          l_unused_blocks := l_segment_size_blocks - (l_used_blocks + l_expired_blocks + l_unexpired_blocks);
+          l_unused_bytes := l_segment_size_bytes - (l_used_bytes + l_expired_bytes + l_unexpired_bytes);
+          l_non_data_blocks := l_unused_blocks + l_expired_blocks + l_unexpired_blocks;
+          l_non_data_bytes :=  l_unused_bytes + l_expired_bytes + l_unexpired_bytes;
+
+          DBMS_OUTPUT.ENABLE;
+          DBMS_OUTPUT.PUT_LINE(' Segment Blocks/Bytes   = '||l_segment_size_blocks||' / '||l_segment_size_bytes);
+          DBMS_OUTPUT.PUT_LINE(' Unused Blocks/Bytes    = '||l_unused_blocks||' / '||l_unused_bytes);
+          DBMS_OUTPUT.PUT_LINE(' Used Blocks/Bytes      = '||l_used_blocks||' / '||l_used_bytes);
+          DBMS_OUTPUT.PUT_LINE(' Expired Blocks/Bytes   = '||l_expired_blocks||' / '||l_expired_bytes);
+          DBMS_OUTPUT.PUT_LINE(' Unexpired Blocks/Bytes = '||l_unexpired_blocks||' / '||l_unexpired_bytes);
+          DBMS_OUTPUT.PUT_LINE('===========================================================================');
+          DBMS_OUTPUT.PUT_LINE(' NON Data Blocks/Bytes  = '||l_non_data_blocks||' / '||l_non_data_bytes);
+     END;
+/
+
+========
+
+To monitor the progress of a long running SHRINK operation you may execute the pl/sql block in this note.  
+You should see a change in the number of blocks. And it is not possible to verify how much time it still need to take for now.
+
+Can I cancel shrink operation? :
+====================
+Shrinking space of a large segment can take a lot of time, e.g. tens of hours, and can generate lots of redo.
+Therefore, it is not advised to interrupt a shrink statement.
+
+Best approach would be:
+
+1. Initially, only use:
+   SQL> alter table  shrink space compact;
+   This also takes long but should have little impact because of only short dml locks
+   
+2. Only when convenient, issue
+   SQL> alter table  shrink space;
+
+Before running in production, it is advised to test for possible impact in your test environment.
