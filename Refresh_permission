@@ -1,0 +1,46 @@
+SET ECHO OFF
+SET FEEDBACK OFF
+SET HEADING OFF
+
+col name for a30
+col password for a30
+set linesize 180
+set pagesize 10000
+spool INOAPPS_INT_passwod_0.log
+
+Select name,password from sys.user$ where name IN ('&SCHEMA_NAME');
+
+spool EDWDEV_service_v1_sys_grant_01.sql
+
+select 'grant ' ||privilege||' '|| 'to ' || grantee || ';'from dba_sys_privs where grantee in ('&SCHEMA_NAME') ;
+
+spool EDWDEV_service_v1_object_grants_02.sql
+
+select 'grant ' ||privilege||' '|| 'ON ' || owner||'.'||table_name|| ' to ' || grantee || ';'from dba_tab_privs where owner in ('&SCHEMA_NAME') ;
+
+spool EDWDEV_service_v1_grantee_grants_03.sql
+
+select 'grant ' ||privilege||' '|| 'ON ' || owner||'.'||table_name|| ' to ' || grantee || ';'from dba_tab_privs where grantee in ('&SCHEMA_NAME') ;
+
+spool EDWDEV_service_v1_role_grants_04.sql
+
+select 'grant '||granted_role||' to '|| Grantee || decode(ADMIN_OPTION, 'YES', ' WITH ADMIN OPTION')||';' from   sys.dba_role_privs where grantee in ('&SCHEMA_NAME');
+
+spool EDWDEV_service_v1_quota_05.sql
+
+select 'alter user '|| username ||' quota '|| decode(max_bytes, -1, 'UNLIMITED', max_bytes)|| ' on '||tablespace_name||';'  from   sys.dba_ts_quotas where username in ('&SCHEMA_NAME');
+
+
+spool EDWDEV_service_v1_createuser_tablespace_00.sql
+
+select 'create user '||username || ' identified by values '''|| b.password || ''' default tablespace '||default_tablespace||' temporary tablespace '||temporary_tablespace||' profile '|| profile||';' from   sys.dba_users a , sys.user$ b where a.username=b.name and a.username  in ('&SCHEMA_NAME');
+
+col owner for a30
+col object_name for a30
+spool EDWDEV_service_v1_invalid_object_7.log
+
+select OWNER,OBJECT_NAME,OBJECT_TYPE,STATUS from dba_objects where status='INVALID' and 
+owner IN ('&SCHEMA_NAME');
+
+select OWNER,OBJECT_NAME,OBJECT_TYPE,STATUS,c from dba_objects where status='INVALID' and 
+owner IN ('&SCHEMA_NAME');
