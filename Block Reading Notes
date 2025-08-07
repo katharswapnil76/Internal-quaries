@@ -1,1 +1,1011 @@
 
+
+Oracle Database Advisor Webcast Schedule and Archived recordings (Doc ID 1456176.1)
+Oracle Engineered Systems Advisor Webcast Schedule and Archive recordings (Doc ID 1456202.1)
+Oracle Support Advisor Webcasts: Current Schedule and Archived Recordings (Doc ID 740966.1)
+
+
+
+Upgrade AHF and TFA on an ODA - Blog dbi services (dbi-services.com)
+https://www.dba-scripts.com/scripts/administration/screen-keep-jobs-active/
+Oracle Database licence / Capacity planning
+https://neerajbhatia.wordpress.com/2011/01/17/understanding-oracle-database-licensing-policies/
+
+Mother of  all Orcale documentation :
+Oracle Help Center
+
+
+[OCI] How To Upgrade AHF Component In DBCS VMBM Environment (Doc ID 2830521.1)
+
+To check ORACHECK is enabled or not ?
+systemctl status oracle-orachkscheduler.service
+
+To check if TFA is enabled or not ?
+systemctl status oracle-tfa.service
+ps -ef | grep -i tfa | grep -v grep
+
+To check AHF location :
+cat /etc/oracle.ahf.loc
+
+To check for the AHF status:
+
+/opt/oracle/dcs/oracle.ahf/bin/ahfctl statusahf
+/opt/oracle/dcs/oracle.ahf/bin/ahfctl stopahf
+/opt/oracle/dcs/oracle.ahf/bin/ahfctl startahf
+
+$ cd /u01/software
+ $ unzip -oq AHF-LINUX_v19.3.0.zip
+ $ mkdir -p $ORACLE_HOME/ahf
+ $ ./ahf_setup -ahf_loc $ORACLE_HOME/ahf
+
+# root
+ cd /opt/oracle.ahf/bin
+ # non-root
+ cd $ORACLE_HOME/ahf/oracle.ahf/bin
+# on-demand
+ ./orachk
+# background
+ ./orachk -autostart
+
+Database installation with patch :
+============================
+Primary Note For Oracle Database Server Installation (Doc ID 1156586.1)
+Install and Patch in one single action with OUI (mikedietrichde.com)
+Oracle Database 19c Important Recommended One-mf Patches (Doc ID 555.1)
+Release Schedule of Current Database Releases (Doc ID 742060.1)
+https://dbaclass.com/article/prerequisite-check-checkactivefilesandexecutables-failed/
+EM13c: How to Verify Patches Applied to the Enterprise Manager 13c Cloud Control OMS, Agent and Plugins (Doc ID 2138068.1)
+NOTE:207303.1 - Client / Server Interoperability Support Matrix for Different Oracle Versions
+Starting With Oracle JDBC Drivers - Installation, Certification, and More! (Doc ID 401934.1)
+
+ASM is Unable to Detect ASMLIB Disks/Devices. (Doc ID 457369.1)
+
+Check in below link for ASMLib software package .
+
+Oracle ASMLib Downloads for Red Hat Enterprise Linux 7
+https://www.oracle.com/linux/downloads/linux-asmlib-rhel7-downloads.html
+https://edelivery.oracle.com/osdc/faces/SoftwareDelivery
+Upon startup of Linux database get ORA-27102: out of memory Linux-X86_64 Error: 28: No space left on device (Doc ID 301830.1)
+Steps To Recreate Central Inventory(oraInventory) In RDBMS Homes (Doc ID 556834.1)
+Strategies for a Corrupted Oracle Central Inventory (Doc ID 414600.1)
+
+
+
+USER Management :
+----------------------------
+ALTER SYSTEM KILL SESSION does not Release Locks Killing a Thread on Windows NT (Doc ID 100859.1)
+Windows NT: Killing an Oracle Thread (Doc ID 69882.1)
+NOTE:1016552.102 - How To Use PROFILES To Limit User Resources
+NOTE:165659.1 - Difference Between Processes, Sessions and Connections
+Troubleshooting Guide - ORA-20: Maximum Number Of Processes (%S) Exceeded (Doc ID 1287854.1)
+
+
+OEM :
+=====
+Exadata Database Machine Discovery (oracle.com)
+
+Overview of the Enterprise Manager Proactive Patch Program (Doc ID 822485.1)
+OEM 13c Monitoring Features - Part 1 | Official Pythian®® Blog
+Oracle Enterprise Manager 12c: Administration Groups & Template Collections - Blog dbi services (dbi-services.com)
+Enterprise Manager Cloud Control Updates: List of Available RUs (Release Updates) and PSUs (Patch Set Updates) (Doc ID 1605609.1)
+Overview of the Enterprise Manager Proactive Patch Program (Doc ID 822485.1)
+Security Alert For CVE-2021-44228,CVE-2021-45046 & CVE-2021-45105 Patch Availability Document for Oracle Enterprise Manager Cloud Control (Doc ID 2828296.1)
+https://oracledbwr.com/patching-oem-13c-release-2-psu-for-oms-and-agent/
+https://www.markusdba.net/2017/06/19/patching-oem-13c-cloud-control-release-2/
+EM 12c, EM 13c : What are Incident Management Rule Sets and Incident Rules? (Doc ID 1556225.1)
+EM 12c, EM 13c Cloud Control: Steps to Configure Incident Rules to Send Notifications or Manage Events, Incidents, or Problems (Doc ID 1368036.1)
+EM 12c, EM 13c: How to Configure a Incident Rule to Send a Notification for a Tablespace Space Used (%) Metric Alert? (Doc ID 1936559.1)
+OEM 13c Monitoring Features - Part 1 | Official Pythian®® Blog
+OEM 13c Monitoring Features - Part 5, Best Practices and Automatic Incident Creation | Official Pythian®® Blog
+https://dbaontap.com/2016/11/25/oem13c-roles-ad-groups/
+EM 12c, EM 13c: How to Configure a Incident Rule to Send a Notification When a Target is marked as UP / Down? (Doc ID 1936555.1)
+Mariadb Lpad Function | AODBA  => How to create administrator in OEM
+https://deepaksharmaem12c.wordpress.com/2015/12/05/oms-log-and-trace-files-in-oem12c/      ==> Log file and there meaning
+EM 12c, EM 13c: Locate and Manage the Various Logs/Trace files in Enterprise Manager Cloud Control Installation (Doc ID 1448308.1)
+New Database metrics introduced with Enterprise Manager Cloud Control 13.2 (Doc ID 2235938.1)
+EM 13c, EM 12c : How to Update DBSNMP Password and Change Monitoring Credentials of an Enterprise Manager Cloud Control Target Database Using emcli Command Line (Doc ID 1592390.1)
+EM 12c, EM 13c: How to set the monitoring credentials for the database in Enterprise Manager Cloud Control (Doc ID 1929492.1)
+Note 2000383.1 - EM 13c, EM 12c: Troubleshooting the Dataguard Standby Database Instance with Down Status in Enterprise Manager
+Note 1267828.1 - SYS Password Management with RAC and Data Guard
+Note 886984.1 - EM 13c, EM 12c: Changing the dbsnmp Password for Multiple Targets at Once Using EMCLI from Enterprise Manager Cloud Control
+NOTE:2024374.1 - Enterprise Manager 12c discovers the Database Target name in Upper Case
+NOTE:2106117.1 - Discovering a Primary Database in 13c Cloud Control gives the name of the Standby as the target name
+NOTE:1371846.1 - EM 13c, EM 12c: How To Manually Add Database Targets in EM Cloud Control and Known Issues
+NOTE:1360183.1 - EM 12c: How to Deploy the Enterprise Manager Cloud Control 12c Linux x86 Agent From the Enterprise Manager 12.1 Console
+NOTE:1388774.1 - 12c: Plugin Deployment Fails With "Plug-in is not certified for the Operating System"
+EM 12c, EM 13c: Troubleshooting a Scan Listener with Down Status in Enterprise Manager Cloud Control (Doc ID 2000779.1)
+NOTE:1543745.1 - EM 13c, 12c: Known Issues in the Discovery of Database and Listener Targets in Enterprise Manager 13c and 12c Cloud Control
+NOTE:1908635.1 - EM 13c, 12c: How to Discover the Cluster and Cluster Database (RAC) Target in EM Cloud Control
+NOTE:1522674.1 - EM 13c,12c: How to Disable Autodiscovery of Clusterware managed targets like Listeners, ASM or DB Iinstances
+NOTE:1473912.1 - Prerequisite script for Exadata Discovery in Oracle Enterprise Manager Cloud Control 12c and 13c
+Note:1911671.1 "How to add a Cluster ASM target in Enterprise Manager Cloud Control
+EM 13c, EM 12c: Understanding Database Discovery and Methods Of Discovery in Enterprise Manager Cloud Control (Doc ID 1400463.1)
+Note 1388143.1 - How to Deploy Latest Database Plugin to OMS and Agent in 12C Cloud Control
+Note:1543745.1 "Troubleshooting Database and Listener Discovery in Enterprise Manager 12c Cloud Control"
+EM 12c, EM 13c: How to Manually add Database Target in Cloud Control (Doc ID 1396361.1)
+EM 12c, EM 13c: How to promote an Oracle Home Target in Enterprise Manager Cloud Control and Refresh the Oracle Home Configuration (Doc ID 1988557.1)
+EM 12c, EM 13c: Troubleshooting Incorrect ASM or ASM Cluster Target Status in Enterprise Manager 12c and 13c Cloud Control (Doc ID 1992791.1)
+EM 13c, 12c: Listener Target Shows a Status of Down in the EM Cloud Control; Response Metric shows: TNS-01189: The listener could not authenticate the user (Doc ID 2009573.1)
+NOTE:1400463.1 - EM 13c, EM 12c: Understanding Database Discovery in Enterprise Manager Cloud Control
+NOTE:1543745.1 - EM 13c, 12c: Known Issues in the Discovery of Database and Listener Targets in Enterprise Manager 13c and 12c Cloud Control
+Enterprise Manager 12c/13c Cloud Control Agent Start Failure Known Issues (emctl start agent) (Doc ID 1917590.1)
+EM 12c, EM 13c: How to add a Cluster ASM target in Enterprise Manager 12c and 13c Cloud Control (Doc ID 1911671.1)
+EM 12c, EM 13c: How to Discover a Listener Target in Enterprise Manager Cloud Control 12c and 13c (Doc ID 1918393.1)
+EM 12c : Audit Table Dba_audit_session In Target Database Shows Daily Failed Logins From DBSNMP (Doc ID 1520740.1)
+EM 12C , 13C : Receiving Tablespace Space Used (%) Alerts Although Autoextend Is ON (Doc ID 2498346.1)
+NOTE:1987743.1 - EM 13c, 12c: How to Troubleshoot an Incorrect Target Status for a Pluggable Database (PDB) in EM Cloud Control Console
+NOTE:1557639.1 - EM 12c, EM 13c: Understanding the Number of Occurrences Metric in Enterprise Manager Cloud Control
+NOTE:2476468.1 - Enterprise Manager 13.3 Main Bundle Patch List (Includes Plug-ins: 13.3.1, 13.3.2)
+EM 13c, EM 12c: How to Set the Monitoring Credentials for a Cluster ASM or Standalone ASM Target Using emcli in EM Cloud Control(Doc ID 2056631.1)
+EM 12c, EM 13c: How to Change the Database Target Name used in Enterprise Manager Cloud Control(Doc ID 1905610.1)
+Oracle Enterprise Manager 12C Configuration Best Practices(Doc ID 1929586.1)
+EM 13c : Understanding and Configuring Metric Extension(Doc ID 2826063.1)
+EM 12c, EM 13c: Understanding and Managing the Job System Using Enterprise Manager Cloud Control(Doc ID 1389236.1)
+EM Information Publisher Reports (Doc ID 1663846.1)
+EM 12c, EM 13c: Enterprise Manager Cloud Control - How to Create a SQL-Based Metric Extension(Doc ID 1455942.1)
+Grid Control Target Maintenance: Understanding Concepts Related to Enterprise Manager Grid Control Targets(Doc ID 1214933.1
+https://dbadeeds.wordpress.com/2020/02/27/how-to-add-oem-agent-to-oracle-grid-crs-resource/
+EM 12c, EM 13c: Configure Incident Ruleset for Getting Notifications for Metric Extension Alerts(Doc ID 1515334.1)
+https://dbadeeds.wordpress.com/2020/02/24/oracle-database-backup-using-oem-emcli-automation-script/
+EM13c : Known Issues specific to Listener Targets status (Doc ID 2824434.1)
+EM 12c, EM 13c: How to add a Cluster ASM target in Enterprise Manager 12c and 13c Cloud Control (Doc ID 1911671.1)
+EM 13c, 12c: How to Discover the Cluster and Cluster Database (RAC) Target in EM Cloud Control (Doc ID 1908635.1)
+OEM Log files locations:
+OMS Log and Trace files in OEM12c. – Oracle EM DBA (wordpress.com)
+EM13c: How to Verify Patches Applied to the Enterprise Manager 13c Cloud Control OMS, Agent and Plugins (Doc ID 2138068.1)
+Understanding all Metrix for all database target type in OEM  =>    Oracle Exadata
+
+Oracle® Configuration Manager Quick Start Guide
+Oracle Configuration Manager Documentation
+
+
+Password File :
+=============
+How To Recover From Lost SYS Password MOSC Note:  805084.1
+Checklist for Resolving Connect AS SYSDBA Issues MOSC Note: 69642.1
+How to Set up the Oracle Password File MOSC Note: 1029539.6
+NOTE:50507.1 - SYSDBA and SYSOPER Privileges in Oracle
+NOTE:373303.1 - How to Check the Environment Variables for an Oracle Process
+
+
+
+
+Listener :
+=======
+Overview and Configuration of Oracle Network Encryption (Doc ID 76629.1)
+Services details for CDB and PDB :
+https://logic.edchen.org/how-to-add-services-to-pdb/    
+How to Configure Static Listener Registration for Standalone,RAC and Data Guard setup (Doc ID 2312510.1)
+How to Enable Oracle SQL*Net Client , Server , Listener , Kerberos and External procedure Tracing from Net Manager (Doc ID 395525.1)
+TNS-12599 and IO Error: Checksum fail When Using Encryption and Checksum with Data Integrity Types SHA256, SHA384 and SHA512 (Doc ID 2199844.1)
+LSNRCTL Commands May Yield Frequent TNS-1189 Errors (Doc ID 285439.1)
+Non-RAC- How to Disable Automatic or Dynamic Registration of the Database with the Default Listener (Doc ID 130574.1)
+ARCHIVED: How to Rotate or Purge Listener Log Data to Avoid Large listener.log File? (Doc ID 1457196.1)
+NOTE:135063.1 - How To Change the Listener Log Filename Without Stopping the Listener
+NOTE:1438242.1 - Why Are My Listener Logs & Traces Not Purged By The ADR?
+NOTE:1283137.1 - Primary Note for Diagnosability - ADR and Packaging
+How to Set the LISTENER_NETWORKS Parameter for Multiple Distinct Networks (Doc ID 2493943.1)
+Details of connection to the database : Preface (oracle.com)
+How to Configure SID_LIST_LISTENER Static Listener - Ed Chen Logic
+A Demonstration of the Alert Log Timeouts Occur: TNS-12170/TNS-12535/TNS-12560/TNS-00505 (Doc ID 2461900.1)
+Alert Log Errors: 12170 TNS-12535/TNS-00505: Operation Timed Out (Doc ID 1628949.1)
+Resolving Problems with Connection Idle Timeout With Firewall (Doc ID 257650.1)
+Archived: Dead Connection Detection (DCD) Explained (Doc ID 151972.1)
+Oracle Net 12c: Changes to the Functionality of Dead Connection Detection (DCD) (Doc ID 1591874.1)
+Terminating Oracle connections with connect_time, idle_time, expire_time and inbound_connect_timeout (dba-oracle.com)
+
+Points to remember :
+
+	1. The SQLNET.ORA file is only read once on creation of a process. RDBMS Background process and shared server dispatchers will need to be restarted for parameter changes in the SQLNET.ORA to be  picked up. Once a process has started to be traced, tracing will not stop until that the process stops. 
+	2. In an environment where both GRID and RDBMS homes are installed, instance would reference a sqlnet.ora file in RDBMS_HOME/network/admin by default.  (Whereas the listener would refer to  GRID_HOME/network/admin for its .ora files)
+
+
+How to open Port in linux :
+--------------------------------------
+Linux 6: 
+Open port 1521 in the firewall for remote users by root.
+[root@primary01 ~]# iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport 1521 -j ACCEPT
+[root@primary01 ~]# iptables -L -n
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+...
+ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0           state NEW tcp dpt:1521
+...
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Don't forget to save the change.
+[root@primary01 ~]# service iptables save
+iptables: Saving firewall rules to /etc/sysconfig/iptables:[  OK  ]
+
+Linux 7 :
+
+Open port 1521 for listener and 1158 for dbconsole.
+[root@db1 ~]# firewall-cmd --state
+running
+[root@db1 ~]# firewall-cmd --list-all
+public (default, active)
+  interfaces: eno16777736
+  sources:
+  services: dhcpv6-client ssh
+  ports:
+  masquerade: no
+  forward-ports:
+  icmp-blocks:
+  rich rules:
+
+[root@db1 ~]# firewall-cmd --permanent --add-port=1521
+bad port (most likely missing protocol), correct syntax is portid[-portid]/protocol
+[root@db1 ~]# firewall-cmd --permanent --add-port=1521/tcp
+success
+[root@db1 ~]# firewall-cmd --permanent --add-port=1158/tcp
+success
+[root@db1 ~]# firewall-cmd --reload
+success
+[root@db1 ~]# firewall-cmd --list-all
+public (default, active)
+  interfaces: eno16777736
+  sources:
+  services: dhcpv6-client ssh
+  ports: 1521/tcp 1158/tcp
+  masquerade: no
+  forward-ports:
+  icmp-blocks:
+  rich rules:
+
+Windows :
+How to Open Port on Windows Server - Ed Chen Logic
+RAC on Windows: How to Install Grid Infrastructure 19c (19.1.X) and RAC on Windows (Step by Step) (Doc ID 2669386.1)
+NOTE:338000.1 - RAC on Windows: How to Modify OS User Privileges for Certain Services (Needed for Backup To Network Shares)
+NOTE:341214.1 - How To Clean up After a Failed (or successful) Oracle Clusterware Installation on Windows
+NOTE:358156.1 - Automatic Startup of Cluster Services May Hang or Fail on Windows
+CRS on Windows: How To Reinitialize (Accidentally Deleted) OCR and Vote Disk (without a full reinstall of Oracle Clusterware) (Doc ID 557178.1)
+Reconfiguring & Recreating The 11gr2/12cr1 Restart/OHAS/SIHA Stack Configuration (Standalone) / How to Reconfigure Oracle Restart(Doc ID 1422517.1)
+
+DB Link:
+-----------
+DB Link, How and Why - Ed Chen Logic
+Create DB Links for Another User, Can We? - Ed Chen Logic
+
+
+RMAN :
+=============
+In windows environment :
+https://www.dba-career.com/2018/05/clonerefreshduplicate-database-using.html
+Archivelog deletion policy for Standby Database in Oracle Data Guard - Blog dbi services (dbi-services.com)
+ALTER DATABASE OPEN RESETLOGS fails with ORA-00392 (Doc ID 1352133.1)
+Things to Consider Before Recreating the Controlfile (Doc ID 1475632.1)
+A Complete Understanding of RMAN Compression (Doc ID 563427.1)
+Resolving ORA-600[3020] Raised During Recovery (Doc ID 361172.1)
+Stuck recovery of database ORA-00600[3020] (Doc ID 283269.1)
+How to restore cold backup of database taken using Rman Document 1391384.1
+RMAN Backup to Oracle Database Backup Cloud Service fails with KBHS-00715 ORA-29024 (Doc ID 2360941.1)
+How to use Rman to Restore Of Single PDB in Multitenant to Alternate Server (Doc ID 2142675.1)
+Roll Forward Physical Standby Using RMAN Incremental Backup in Single Command (Doc ID 2431311.1)
+11g Steps to perform for Rolling Forward a Physical Standby Database using RMAN Incremental Backup. (Doc ID 836986.1)
+Getting Started with Recovery Manager (RMAN) (Doc ID 360416.1)
+https://docs.oracle.com/en-us/iaas/Content/Database/Tasks/exabackingupBKUPAPI.htm
+Step-by-Step procedure to place On-Premise Database backup on Oracle Cloud (Doc ID 2225766.1)
+RMAN Duplicate Using TDE Encrypted Backups (Doc ID 1560327.1) 
+
+Backup using api logs file:
+/var/opt/oracle/bkup_api/log/bkup_api.log
+
+
+RMAN Performance :
+=================
+RMAN Backup Performance (Doc ID 360443.1)
+Using V$BACKUP_ASYNC_IO / V$BACKUP_SYNC_IO to Monitor RMAN Performance (Doc ID 237083.1)
+RMAN: Monitoring Recovery Manager Jobs (Doc ID 144640.1)
+RMAN Performance Troubleshooting (Doc ID 1326686.1)
+Advise On How To Improve Rman Performance (Doc ID 579158.1)
+Script to monitor RMAN Backup and Restore Operations (Doc ID 1487262.1)
+Top 10 Backup and Recovery Best Practices (Doc ID 388422.1)
+RMAN : Consistent Backup, Restore and Recovery using RMAN (Doc ID 162855.1)
+RMAN: RAC Backup, Restore and Recovery using RMAN (Doc ID 243760.1)
+
+
+BLOCK Corruption :
+=================
+DBVERIFY - Database file Verification Utility (Doc ID 35512.1)
+How to Format Corrupted Block Not Part of Any Segment (Doc ID 336133.1)
+Use RMAN to format corrupt data block which is not part of any object (Doc ID 1459778.1)
+
+
+
+Dataguard :
+===========
+How to Roll Forward a Standby Database Using Recover Database From Service (Doc ID 2850185.1)
+Roll Forward Physical Standby Using RMAN Incremental Backup in Single Command (Doc ID 2431311.1)
+Step by Step Guide on How To Reinstate Failed Primary Database into Physical Standby (Doc ID 738642.1)
+Gouranga's Tech Blog: Active Dataguard - Manual Failover & Switchover (facedba.blogspot.com)
+Creating a Physical Standby database using RMAN restore database from service (Doc ID 2283978.1)
+Data Guard Physical Standby – Configuration Health Check (Doc ID 1581388.1)
+Data Guard transport lag in OEM 12c
+Data Guard Real-Time Apply FAQ (Doc ID 828274.1)
+https://dbaliveblog.wordpress.com/2016/10/22/troubleshooting-data-guard/
+DOC : 2197072.1:
+Network measure for dataguard redo transport :
+https://dbamarco.wordpress.com/2016/11/25/benchmarking-data-guard-throughput/
+How to resolve MRP stuck issues on a physical standby database? (Doc ID 1221163.1)
+How to Create and Drop Guaranteed restore point in Oracle Data Guard – The Geek Diary
+https://fatdba.com/2022/01/19/part-2-creating-custom-sql-profile-for-a-slow-sql-in-a-data-guard-physical-standby-database/
+https://fatdba.com/2022/01/15/part-1-running-sql-tuning-advisor-for-a-slow-sql-in-a-read-only-standby-database/
+https://fatdba.com/2022/01/28/part-3-using-sqlt-sqltxplain-tool-with-data-guard-physical-standby-databases/
+https://fatdba.com/2022/02/07/part-4-how-to-generate-an-awr-report-for-a-data-guard-physical-standby-database/
+
+
+
+
+
+
+RAC:
+=====
+Oracle Real Application Clusters(RAC) (techgoeasy.com)
+Can not Start ASM instance on 2nd node (Doc ID 729564.1)
+TOD – Top 5 reasons the cluster will not start on a node. | The Grumpy DBA Blogs . . . (wordpress.com)
+FAQ: 12c Grid Infrastructure Management Repository (GIMR) (Doc ID 1568402.1)
+crsctl stop crs vs crsctl stop cluster – Oracle By Mohammed Ali A. Syed (wordpress.com)
+Reconfigure HAS and CSS for nonRAC ASM on 11.2 (Doc ID 887658.1)
+Pre-11.2: How to Recreate OCR/Voting Disk Accidentally Deleted (Doc ID 399482.1)
+RAC: Frequently Asked Questions (RAC FAQ) (Doc ID 220970.1)
+Primary Note for Database Startup/Shutdown (Doc ID 1270450.1)
+
+
+Install RAC on windows :
+-------------------------------
+https://logic.edchen.org/how-to-build-19c-rac-on-windows-1-of-4-preparing-two-database-servers/
+https://logic.edchen.org/how-to-build-19c-rac-on-windows-2-of-4-installing-grid-infrastructure/
+
+RAC Log file locations:
+11g Grid logs file :
+$GRID_HOME/log/<host>
+
+12.1.0.2 standard cluster :
+Name of alert log : alert.log
+location of alert log: $ORACLE_BASE/diag/crs/host01/crs/trace
+
+12.1.0.1 flex cluster :
+Name of alert log : alert<hostname>.log
+location of alert log: $ORACLE_HOME/log/host01
+
+
+
+Unix :
+======
+https://neerajbhatia.wordpress.com/2010/10/25/linux-memory-utilization/
+Monitoring File System Free Space in Oracle UNIX Administration (remote-dba.net)
+How Do I Find Out Linux CPU Utilization? - nixCraft (cyberciti.biz)
+Manage Audit File Directory Growth with cron (Doc ID 1298957.1)
+A Lot of Audit Files in ASM Home (Doc ID 813416.1)
+Cleanup traces, logs in one command (Doc ID 2081655.1)
+Adrci Purge Does Not Clear the Text-formatted Alert.Log located in the Trace Folder (Doc ID 751082.1)
+Huge MGMTCA Trace File Generation [2702399.1]
+An Unknown DBA blog: Efficiently purge / rotate all the Oracle logfiles
+TECH: Unix Virtual Memory, Paging & Swapping explained (Doc ID 17094.1)
+How To Check Swap Usage of Each Processes (Doc ID 1931980.1)
+How to Check Whether a System is Under Memory Pressure (Doc ID 1502301.1)
+Swap Utilization (92%) Exceeds Configured Threshold (90%) Continuously for more than 6 Hours (Doc ID 2198145.1)
+Oracle Linux: How to understand OS load average and run queue / blocked queue in terms of CPU utilization (Doc ID 2221159.1)
+How to Check and Analyze Solaris Memory Usage (Doc ID 1009500.1)
+How to Check Swap and Memory Usage Live via the 'top' Command on Oracle Linux 5, 6, 7, and 8. (Doc ID 2422888.1)
+Determining which Processes are Using up Memory and Swap on RHEL3 (Doc ID 269426.1)
+Analyzing Data Provided by '/proc/meminfo' (Doc ID 233753.1)
+How To Check Swap Usage of Each Processes (Doc ID 1931980.1)
+How to Check Whether a System is Under Memory Pressure (Doc ID 1502301.1)
+ExaWatcher Utility On Exadata and SuperCluster Compute and Storage Nodes (Doc ID 1617454.1)
+NOTE:361468.1 - HugePages on Oracle Linux 64-bit
+ACFS Support On OS Platforms (Certification Matrix). (Doc ID 1369107.1)
+How to Check Memory Consumption of a Process in Linux
+tar -czf /root/backup_ahf_for_upgrade/oracle.ahf.20.1.3.0.0.tar.gz ./oracle.ahf  ==> archive and zip 
+tar xzf <archive name>.tar.gz  => Unarchive file
+tar xzfC <archive name>.tar.gz <location>  => It will allow to specify the location where to unarchive.
+Document 17094.1 TECH: Unix Virtual Memory, Paging & Swapping explained
+
+Windows :
+=========
+Windows Commands Line Cheatsheet for DBAs – Eclipsys
+
+
+Data pump :
+==========
+IMPDP Hangs, or Appears to Hang – But Has it? – Rants & Raves – The Blog! (dunbar-it.co.uk)
+
+
+ACFS :
+=====
+ASM/ACFS 11.2 How To Create “A CRS Managed" ACFS FileSystem On a Cluster RAC Configuration Through the ASMCA Assistance Or Command-Line (Doc ID 1484221.1)
+ROUBLESHOOTING - ASM disk not found/visible/discovered issues (Doc ID 452770.1)
+NOTE:1934305.1 - How to Recreate an ACFS CRS Resource Associated to an ACFS Filesystem
+NOTE:1371067.1 - How To Install/Reinstall Or Deinstall ACFS Modules/Installation Manually?
+NOTE:2026700.1 - Does ACFS Use inode architecture?
+NOTE:1934305.1 - How to Recreate an ACFS CRS Resource Associated to an ACFS Filesystem
+NOTE:1350188.1 - How To Setup 11.2.0.X ACFS On Windows (64-bit) On RAC.
+"du" & "df" OS commands Report Space Used Differences On ACFS Filesystems. (Doc ID 1384276.1)
+Top ACFS startup issues (Doc ID 2245708.1)
+
+
+OCI:
+===
+Learning cloud database : Clone a DB System (oracle.com)
+Oracle Base Database Service
+
+Oracle Database CLI Reference
+Patching DB System Resources Using dbcli (oracle.com)
+Cloud Fundamentals: Everything You Need To Know | K21 Academy
+Oracle OCI vs Oracle OCI - C | Understand the difference (k21academy.com)
+dbaascli patch db list (oracle.com)
+OCI Patching :
+https://docs.oracle.com/en/cloud/paas/bm-and-vm-dbs-cloud/dbspatchingdbcli/index.html#PHBSR-GUID-2E59FE04-7716-4A66-B6F1-9AA622CDD33C
+Patching in old classic :
+Patching Database using dbaascli utility (#OracleCloud #dbaascli #dbpatchm) | Sai Pradeep Vattem (wordpress.com)
+https://techgoeasy.com/dbcli-commands/
+OCI DB - Root filesystem / is full. Is it allowed To delete files under /opt/oracle/oak/pkgrepos/orapkgs/clones (Doc ID 2438096.1)
+Installing Database Patch Updates for Oracle E-Business Suite on Single Instance VM DB System in Oracle Cloud Infrastructure (Doc ID 2360215.1)
+How to Install Oracle RDBMS software using dbcli command in OCI DB systems (Doc ID 2462290.1)
+OCI - How to Create, Administer PDB using DBCLI?(Doc ID 2664214.1)
+OCI: How to Create Database Using dbcli(Doc ID 2447240.1)
+How to resize the ACFS mount in OCI BareMetal DB system(Doc ID 2770760.1)
+OCI: VM DB Automatic Backup Failed With "Status: Database OCID backup failed due to configuration discrepancies"(Doc ID 2563037.1)
+OCI : How To Backup Database In OCI (Oracle Cloud Infrastructure) Virtual Machine & Bare Metal DB System(Doc ID 2707577.1)
+OCI: How To Recover Database Using DBCLI Backup(Doc ID 2575539.1)
+CI HOW To Create New PDB In OCI DBS 2 Node RAC With TDE(Doc ID 2516000.1)
+OCI - How to Create, Administer PDB using DBCLI?(Doc ID 2664214.1)
+Steps to Implement Standby / Data Guard setup in OCI (Bare Metal) and how to gather diagnostic information for any failure.(Doc ID 2439602.1)
+Is It Possible To Create Additional Databases On OCI Database Cloud Service Hosts?(Doc ID 2428269.1)
+DBCS OCI: How to create a new PDB in an OCI CDB?(Doc ID 2438598.1)
+How to Manage and Check Health of DBSystem and Related Services in OCI(Doc ID 2678285.1)
+Diagnostic Data Collection For Oracle Database Cloud Service Instance (OCI)(Doc ID 2397481.1)
+OCI : Working With Oracle Data Guard In Virtual Machine DB System(Doc ID 2721123.1)
+OCI] Change Audit File Retention For Remove Audit files Job.(Doc ID 2734558.1)
+[OCI] How to Restore TDE wallet file in OCI (BareMetal / VMDB)(Doc ID 2555006.1)
+gDBClone Powerful Database Clone/Snapshot Management Tool(Doc ID 2099214.1)
+Primary Note for Troubleshooting Slow or Hanging Login Attempts on OCI(Doc ID 2573903.1)
+Exadata Cloud Service in OCI Best Practices (Doc ID 2570952.1)
+OJVM Patches Are not Getting Applied With DB PSU in OCI DBCS Environment(Doc ID 2501774.1)
+How Apply DB PSU in OCI-C DBaaS - Virtual Image deployments(Doc ID 2620252.1)
+How to Apply the Latest Database Patch for OCI VM Dbsystem shown via command line (Doc ID 2836316.1)
+OCI: How to Restart dcs-agent (Doc ID 2447239.1)
+OCI DB - Root filesystem / is full. Is it allowed To delete files under /opt/oracle/oak/pkgrepos/orapkgs/clones (Doc ID 2438096.1)
+Upgrading Oracle Database 12c to 19c for Oracle E-Business Suite Release 12.2 on OCI VM DB Systems(Doc ID 2714918.1)
+Upgrading Oracle Database 12c to Oracle 19c for Oracle E-Business Suite Release 12.1 on OCI VM DB Systems(Doc ID 2683182.1
+[OCI] dbcli describe-job -i Failed with 'Error Reading Entity From Input Stream' (Doc ID 2659518.1)
+https://rajkumar-dba.blogspot.com/2018/01/oracle-cloud-creating-oracle-database.html
+https://rajkumar-dba.blogspot.com/2018/01/oracle-cloud-02-startstop-oracle-dbaas.html
+https://rajkumar-dba.blogspot.com/2018/02/oracle-cloud-04-creating-on-demand.html
+https://rajkumar-dba.blogspot.com/2020/03/dbcs-database-cloud-service-patching.html
+OCI Auto scaling making DB service on / of
+https://github.com/AnykeyNL/OCI-AutoScale
+OCI- How to retrieve instance metadata from command line (Doc ID 2570001.1)
+https://mdinh.wordpress.com/2021/06/16/how-to-determine-host-is-on-oci/
+https://docs.oracle.com/en-us/iaas/oracle-linux/oci-utils/index.htm#oci-metadata
+Upgrading the database in OCI :
+https://dohdatabase.com/2020/12/17/upgrading-in-the-cloud-vm-db-systems-automated-upgrade-to-19c-the-details/
+
+DBaaS: Cloud Mail Notification Services Setup (Doc ID 2079333.1)
+Step-by-step instructions to send email with OCI Email Delivery (oracle.com)
+How to Configure Email Notification for Automatic Backups in OCI Database Service Instance (Doc ID 2666093.1)
+How To Create DB System from Backup using OCI CLI (Doc ID 2643907.1)
+How to Update Java Version in OCI DBSystem (Doc ID 2660707.1)
+
+
+EXACS and EXACC : 
+================
+(ODyS) Oracle Dynamic Scaling engine - Scale-up and Scale-down automation utility for OCI DB System (ExaDB-D/ExaDB-C@C) (Doc ID 2719916.1)
+
+
+
+Performance monitoring in OCI :
+Performance Hub Features (oracle.com)
+EBS Stack monitoring using in OCI : OCI Stack Monitoring for E-Business Suite – Eclipsys
+Monitor OCI Compute Instance Using Observability and Management Monitoring Service – Eclipsys
+
+
+To get the instance details in OCI :
+[root@inotst2c ~]# cd /opt/oracle/dcs/bin/
+[root@inotst2c bin]# curl -s http://169.254.169.254/opc/v1/instance/ | egrep -v "user_data|ssh_authorized_keys|timeCreated"
+
+
+Cloud Backup :
+OCI: HOW TO CREATE RMAN BACKUP REPORT(Doc ID 2563116.1)
+OCI: How To Configure & Manage Database Backups On OCI EXACS DB System (Doc ID 2708469.1)
+OCI : How To Backup Database In OCI (Oracle Cloud Infrastructure) Virtual Machine & Bare Metal DB System (Doc ID 2707577.1)
+Details of all the backup in cloud document:
+Typical Workflow for Administering Oracle Database Backup Cloud Service
+https://docs.oracle.com/en-us/iaas/Content/Database/References/dbacli.htm#Backup_Commands
+OCI : How To Restore & Recover Database In OCI (Oracle Cloud Infrastructure) Virtual Machine DB System (Doc ID 2707954.1)
+
+OCI: How To Backup Database To Cloud Object Storage Using DBCLI (Doc ID 2576589.1)
+Troubleshooting Managed Database Backups on OCI (Doc ID 2365411.1)
+Backup Failures on Bare Metal and Virtual Machine DB Systems (oracle.com)
+Troubleshoot Backup Failures (oracle.com)
+https://unknowndba.blogspot.com/2019/10/oracle-cloud-oci-automatic-backups-troubleshooting.html
+How to take backup of the oracle database using RMAN on Azure Blob storage :
+Oracle Database Backup Directly on Microsoft Azure Cloud Blob Storage using RMAN – Eclipsys
+
+Restoring the cloud database :
+Recover a Database from the OCI Classic Object Store (oracle.com)
+https://asanga-pradeep.blogspot.com/2019/03/backup-and-recover-using-dbcli-on-oci.html
+https://database-heartbeat.com/2021/12/06/restore-dbcs-vm-across-ads/
+
+
+How to know that database is Autonomous DB or not ?
+https://database-heartbeat.com/2021/08/31/isautonomous/
+check the CLOUD_IDENTITY column of the v$pdbs view.
+The CLOUD_IDENTITY column does not exist on non-Autonomous databases
+
+
+
+AWS :
+======
+
+Resolve problems with an Amazon RDS Oracle DB instance that Is using more storage than expected | AWS re:Post (repost.aws)
+Resize the tablespace for an RDS for Oracle DB instance | AWS re:Post (repost.aws)
+Automatically connecting an EC2 instance and a DB instance - Amazon Relational Database Service
+Oracle database log files - Amazon Relational Database Service
+Performing common database tasks for Oracle DB instances - Amazon Relational Database Service
+Use best practices to manage RDS for Oracle storage | AWS re:Post (repost.aws)
+
+
+
+
+
+
+
+
+
+
+Password Management:
+=====================
+Oracle Database 12.1.0.1  utlpwdmg.sql taken from Oracle 12.1.0.1 on Linux x86-64bit
+Oracle Password Management Policy [114930.1]
+Password Verify Function Not Enforcing Difference Between Old and New Passwords [816932.1]
+Is the Password Encrypted when I Logon and Other Related Questions [271825.1]
+11gR1 New Feature: Case-Sensitive Passwords and Strong User Authentication (Doc ID 429465.1)
+How To Enforce Mixed Case Passwords When sec_case_sensitive_logon = true? (Doc ID 1307555.1)
+Oracle 12c new password verify function | OraDBA
+How To Recover From Lost SYS Password (Doc ID 805084.1)
+Password file :
+https://satya-dba.blogspot.com/2009/11/password-file-in-oracle.html
+
+
+
+Oracle Wallet:
+=============
+Common Causes of "ORA-28365: wallet is not open" (Doc ID 2560015.1)
+RAC: V$ENCRYPTION_WALLET and GV$ENCRYPTION_WALLET contain different values (Doc ID 1641846.1)
+NOTE:1197943.1 - Wallet Status in TDE Recovery Scenarios (Including Data Guard/Standby Configuration)
+Managing TDE Wallets in a RAC Environment (Doc ID 567287.1)
+Primary Note For Transparent Data Encryption ( TDE ) (Doc ID 1228046.1)
+Quick TDE Setup and FAQ (Doc ID 1251597.1)
+Known TDE Wallet Issues (Doc ID 1301365.1)
+Wallet Status in TDE Recovery Scenarios (Including Data Guard/Standby Configuration) (Doc ID 1197943.1)
+The Impact of the Sqlnet Settings on Database Security (sqlnet.ora Security Parameters and Wallet Location) (Doc ID 1240824.1)
+NOTE:1627807.1 - Step by step method to implement Transparent Data Encryption (TDE) in 11g Data Guard and 11g RAC environments
+Setting Environment Variables Through Srvctl (Doc ID 733567.1)
+
+TNS_ADMIN variable is not defined correctly on all nodes to point to the correct sqlnet.ora file.
+The correct sqlnet.ora is being used by this database and by sqlplus.  (If using $TNS_ADMIN, make sure it is set appropriately.)
+If the sqlnet.ora has ENCRYPTION_WALLET_LOCATION set, and the parameter includes an environment variable (example: $ORACLE_UNQNAME), that same environment variable must be set in both srvctl and the  OS session
+The directory pointed to by ENCRYPTION_WALLET_LOCATION must contains the correct ewallet.p12 file for the database
+ If the ENCRYPTION_WALLET_LOCATION directory does not contain a cwallet.sso file (an auto-login wallet), then after the database is started, it will still be necessary to open the keystore (wallet) manually; 
+
+Primary Note For Oracle Audit Vault(Doc ID 1199033.1)
+
+
+Database Installation , upgrade and migration :
+=======================================
+RAC on Windows: How to Install Grid Infrastructure 19c (19.1.X) and RAC on Windows (Step by Step) (Doc ID 2669386.1)
+Primary Note For Oracle Database Upgrades and Migrations(Doc ID 1152016.1)
+Primary Note for Real Application Testing Option(Doc ID 1464274.1)
+https://rupeshanantghubade.blogspot.com/2020/07/how-to-install-and-configure-oracle-rac.html
+Primary Note of Linux OS Requirements for Database Server (Doc ID 851598.1)
+NOTE:1520299.1 - Primary Note For Oracle Database 12c Release 1 (12.1) Database/Client Installation/Upgrade/Migration Standalone Environment (Non-RAC)
+NOTE:1555012.2 - Troubleshooting Assistant: Oracle Database - Client / Install / Deinstall / Cloning
+How to Install 11.2 /12.1/12.2/18c/19c/21c Database/Client Software in Silent Mode with/without Using Response File (Doc ID 885643.1)
+11gR2 Clusterware and Grid Home - What You Need to Know (Doc ID 1053147.1)
+Troubleshoot Grid Infrastructure Startup Issues (Doc ID 1050908.1)
+NOTE:1609127.1 - How To Validate ASM Instances And Diskgroups On A RAC Cluster (When CRS Does Not Start).
+NOTE:1355977.1 - Steps To Shutdown(stop)/Startup(start) CRS, OHAS, ASM, RDBMS & ACFS Services on a RAC Cluster 11.2 & 12.1 Configuration
+
+https://dbamarco.wordpress.com/2019/03/04/platform-change-and-upgrade-in-one-step-manually/
+https://dbamarco.wordpress.com/2019/03/01/platform-change-and-upgrade-in-one-step-xtts/
+
+OCI Migration using database migration service DMS :
+https://eclipsys.ca/zero-downtime-database-migration-using-oracle-cloud-infrastructure-oci-database-migration-service-dms/
+
+
+
+RESOURCE Manager / Instance caging:
+================================
+Configuring and Monitoring Instance Caging (Doc ID 1362445.1)
+NOTE:1340172.1 - This document has been replaced with more recent information on this topic. Please refer to more recent documentation.
+NOTE:1339769.1 - Primary Note for Oracle Database Resource Manager
+NOTE:1484302.1 - Primary Note: Overview of Oracle Resource Manager and DBMS_RESOURCE_MANAGER
+
+
+
+Oracle Apex and ORDS:
+===================
+Install and Configure Oracle APEX with ORDS and Apache Tomcat - Doyensys Blog
+
+
+
+
+Statspack :
+=========
+Installation of statspack:
+https://doyensys.com/blogs/oracle-statspack-installing-and-configuration/
+https://ocptechnology.com/how-to-install-configure-and-use-statspack-in-oracle/#Oracle_Statspack
+19c installation in PDB :
+Statspack with Oracle Database 19c and Multitenant - Blog dbi services (dbi-services.com)
+
+Automatically purge the statspack snapshot
+https://oraclefiles.com/2019/03/04/how-to-auto-purge-statspack-snapshots/
+
+Mining Statspack and AWR Repositories for Historical Trends | Official Pythian®® Blog
+blog-files/statspack_top_sqls.sql at jbratina · pythian/blog-files · GitHub
+
+
+Performance Tuning:
+=================
+Information Center: Sql Performance Tuning: Troubleshoot (Doc ID 1516522.2)
+https://bdrouvot.wordpress.com/db_io_metrics_script/
+http://facedba.blogspot.com/2014/04/hanganalyze-case-study.html
+http://facedba.blogspot.com/search/label/SQL%20Tuning
+https://www.dbconcepts.com/oracle-automatic-workload-respository-scripts-part-2/
+NOTE:228913.1 - Systemwide Tuning Using STATSPACK Reports
+NOTE:276103.1 - Performance Tuning Using Advisors and Manageability Features: AWR, ASH, ADDM and SQL Tuning Advisor
+NOTE:39817.1 - Interpreting Raw SQL_TRACE output
+NOTE:43214.1 - AUTOTRACE Option in SQL*Plus
+NOTE:94224.1 - FAQ- Statspack Complete Reference
+NOTE:151473.1 - INITRANS Relationship with DB_BLOCK_SIZE.
+NOTE:21154.1 - EVENT: 10046 "enable SQL statement tracing (including binds/waits)"
+NOTE:44961.1 - Statistics Gathering: Frequency and Strategy Guidelines
+NOTE:50256.1 - RDBMS V7.0.X - V7.3.X Locking Issues on Oracle Server
+NOTE:62161.1 - Systemwide Tuning using UTLESTAT Reports in Oracle7/8
+NOTE:73167.1 - Handling of equally ranked (RBO) or costed (CBO) indexes
+NOTE:66484.1 - Which Optimizer is Being Used ?
+NOTE:67522.1 - * Diagnosing and Understanding Why a Query is Not Using an Index
+NOTE:70075.1 - Use of Bind Variables in Queries (Pre-9i)
+Document 21154.1 10046 event
+NOTE:296377.1 - Troubleshooting: High Version Count Issues
+NOTE:33089.1 - * TROUBLESHOOTING: Possible Causes of Poor SQL Performance
+NOTE:62143.1 - Troubleshooting: Understanding and Tuning the Shared Pool
+NOTE:727400.1 - WAITEVENT: "library cache: mutex X"
+Document 1476298.1 Resolving Issues Where 'enq: TX - row lock contention' Waits are Occurring
+Document 873243.1 Troubleshooting 'enq: TX - index contention' Waits in a RAC Environment.
+Document 1946502.1 Resolving Issues Where 'enq: TX - contention' Waits are Occurring
+Document 1476044.1 Resolving Issues Where Waits for 'latch: cache buffers chains' Seen Due to Poorly Tuned SQL
+Troubleshooting 'library cache: mutex X' Waits. (Doc ID 1357946.1)
+Troubleshooting: Understanding and Tuning the Shared Pool (Doc ID 62143.1)
+NOTE:438755.1 - High SQL Version Counts - Script to determine reason(s)
+NOTE:2051456.1 - Troubleshooting Databases Hang Due to Heavy Contention for 'library cache: mutex X' Waits (Oracle 11.2 and Later)
+NOTE:1291879.1 - Oracle Database Patch Set Update 11.2.0.2.2 Known Issues
+NOTE:1169017.1 - ANNOUNCEMENT: Deprecating the Cursor_Sharing = 'SIMILAR' Setting
+NOTE:459694.1 - Procwatcher: Script to Monitor and Examine Oracle DB and Clusterware Processes
+http://suchitdba.blogspot.com/p/load-sql-plan-from-cusrsor-cache-to-sql.html
+Primary Note: Database Performance Overview (Doc ID 402983.1)
+Primary Note: SQL Query Performance Overview (Doc ID 199083.1)
+TROUBLESHOOTING: Tuning a New Query (Doc ID 372431.1)
+https://www.ludovicocaldara.net/dba/oracle-db-cpu-load-on-consolidated-servers/
+Index Rebuild, the Need vs the Implications (Doc ID 989093.1)
+Performance Diagnosis with Automatic Workload Repository (AWR) (Doc ID 1674086.1)
+Document 1400903.1 Directing Plans with Baselines/Profiles Using coe_load_sql_baseline.sql / coe_load_sql_profile.sql (shipped with SQLT)
+How to Identify Hot Blocks Within the Database Buffer Cache that may be Associated with 'latch: cache buffers chains' Wait Contention (Doc ID 163424.1)
+Document 390374.1 Oracle Performance Diagnostic Guide (OPDG)
+Document 163424.1 How To Identify a Hot Block Within The Database Buffer Cache.
+Document 62172.1 Understanding and Tuning Buffer Cache and DBWR
+How to Find CPU and Memory Utilization by Oracle Database for Historical and Current Time (Doc ID 2426861.1)
+Interpreting Explain Plan in Oracle – for beginners (linkedin.com)
+Apply the sql plan baseline and patch :
+How to use a SQL Plan Baseline or a SQL Patch to add Optimizer hints (sqlmaria.com)
+How to Create a SQL Patch to add Hints to Application SQL Statements (Doc ID 1931944.1)
+How SQL Plan Baselines Work with Oracle Virtual Private Database (VPD) Enabled Queries (Doc ID 2041264.1)
+Script to Collect Log File Sync Diagnostic Information (lfsdiag.sql) (Doc ID 1064487.1)
+NOTE:2444753.1 - How To Create SQL Patch From AWR Repository Without Merging Outline Data Hints Manually
+NOTE:1931944.1 - How to Create a SQL Patch to add Hints to Application SQL Statements
+How to Move SQL Profiles from One Database to Another (Including to Higher Versions) (Doc ID 457531.1)
+Automatic Workload Repository (AWR) Reports - Main Information Sources (Doc ID 1363422.1)
+Systemwide Tuning Using STATSPACK Reports (Doc ID 228913.1)
+FAQ- Statspack Complete Reference (Doc ID 94224.1)
+
+
+AWR :
+=====
+Document 1301503.1 Troubleshooting: AWR Snapshot Collection issues
+Document 782974.1 How to Recreate The AWR ( AUTOMATIC WORKLOAD ) Repository ?
+Document 1628089.1 AWR Report Interpretation Checklist for Diagnosing Database Performance Issues
+Document 1359094.1 How to Use AWR reports to Diagnose Database Performance Issues
+Document 748642.1 How to Generate an AWR Report and Create Baselines
+Document 786554.1 How to Read PGA Memory Advisory Section in AWR and Statspack Reports
+Document 754639.1 How to Read Buffer Cache Advisory Section in AWR and Statspack Reports.
+Document 762526.1 How to Interpret the OS stats section of an AWR report
+Document 1466035.1 How to Interpret the "SQL ordered by Physical Reads (UnOptimized)" Section in AWR Reports (11.2 onwards)
+NOTE:1357637.1 - How to Control the Number of SQL Statements and other information displayed in AWR Report
+
+
+Locking :
+========
+Document 1019527.6 Script to Check for Foreign Key Locking Issues for a Specific User which will generate a report for all problem objects.
+
+
+
+
+Memory :
+=========
+NOTE:2128928.1 - How To Convert A Database Using AMM (Automatic Memory Management) To A Database That Has Been Configured With Hugepages
+NOTE:1269139.1 - SGA Re-Sizes Occurring Despite AMM/ASMM Being Disabled (MEMORY_TARGET/SGA_TARGET=0)
+NOTE:148495.1 - Dynamic SGA
+NOTE:1392549.1 - Automatic Memory Management (AMM) SGA and PGA Management in 11g and Above
+NOTE:1516202.1 - How to Monitor Process Memory Usage on Pluggable Databases
+NOTE:1516229.1 - How to Monitor SGA Memory on Pluggable Database
+NOTE:223730.1 - Automatic PGA Memory Management
+Automatic Memory Management (AMM) on 11g & Above (Doc ID 443746.1)
+How to Read PGA Memory Advisory Section in AWR and Statspack Reports to Tune PGA_AGGREGATE_TARGET (Doc ID 786554.1)
+How to Read Buffer Cache Advisory Section in AWR and Statspack Reports. (Doc ID 754639.1)
+Sizing the PGA in Oracle 19c - How to Account for the MGA Size (Doc ID 2808761.1)
+MGA (Managed Global Area) Reference Note (Doc ID 2638904.1)
+Oracle Database Automated SGA Memory Tuning (Doc ID 257643.1)
+ORA-4036 "PGA memory used by the instance exceeds PGA_AGGREGATE_LIMIT" (Doc ID 2854122.1)
+How To Find Where The Memory Is Growing For A Process (Doc ID 822527.1)
+Limiting Process Size with Database Parameter PGA_AGGREGATE_LIMIT (Doc ID 1520324.1)
+ORA-4036 "PGA memory used by the instance exceeds PGA_AGGREGATE_LIMIT" (Doc ID 2854122.1)
+Swap Utilization (92%) Exceeds Configured Threshold (90%) Continuously for more than 6 Hours (Doc ID 2198145.1)
+NOTE:2101638.1 - Initialization parameters in a Multitenant database - FAQ and Examples
+How to Change Initialization Parameters at PDB Level on Standby Database (Doc ID 2903547.1)
+Initialization parameters in a Multitenant database – Facts and additional information (Doc ID 2101596.1)
+ORA-4031 Common Analysis/Diagnostic Scripts (Doc ID 430473.1)
+Troubleshooting: Understanding and Tuning the Shared Pool (Doc ID 62143.1)
+Information Gathering Script For ORA-4031 Analysis On Shared Pool (Doc ID 1909791.1)
+Diagnosing and Resolving Error ORA-04031 on the Shared Pool or Other Memory Pools (Doc ID 146599.1)
+ORA-04031: unable to allocate bytes of shared memory - Why it Happens and How to Resolve
+
+
+
+Partitions and Statiscs:
+===================
+Document 1964223.1 Are Extended Statistics Collected Automatically on Oracle 12c?
+Automatic Optimizer Statistics Collection on Partitioned Table (Doc ID 1592404.1)
+NOTE:457926.1 - How to Gather Statistics on Objects Owned by the 'SYS' User and 'Fixed' Objects
+FAQ: Automatic Statistics Collection (Doc ID 1233203.1)
+Document 1501712.1 FAQ: Statistics Gathering Frequently Asked Questions
+https://docs.oracle.com/cd/E25054_01/server.1111/e16638/stats.htm
+
+
+Automation and Random:
+=======================
+Timestamps & time zones - Frequently Asked Questions (Doc ID 340512.1)
+https://dbadeeds.wordpress.com/2020/12/04/automating-oracle-databases-password-rotation-using-ansible/
+Relink oracle binaries:
+http://suchitdba.blogspot.com/p/steps-to-relink-oracle-libraries.html
+Manage Audit File Directory Growth with cron (Doc ID 1298957.1)
+Oracle Autonomous Database users can now be authenticated and managed with Azure Active Directory
+How to Determine the SQL Statements Executed by a Blocking Session in the Past Using Active Session History (ASH) Report (Doc ID 2406026.1)
+OERR: ORA-8103 “object no longer exists” Master Note / Troubleshooting, Diagnostic and Solution (Doc ID 8103.1)
+Upon startup of Linux database get ORA-27102: out of memory Linux-X86_64 Error: 28: No space left on device (Doc ID 301830.1)
+Introduction to 600/7445 Internal Error Analysis (Doc ID 390293.1)
+
+
+
+
+
+Exadata :
+https://www.oracle.com/us/assets/lifetime-support-technology-069183.pdf
+List_of_Oracle_Supported_Hardware_with_Last_Ship_Dates_Announced__1450710.1_.pdf
+em13c: Cookbook for Discovering Exadata in EM Cloud Control 13c(Doc ID 2371835.1)
+Oracle Exadata Database Machine Setup/Configuration Best Practices(Doc ID 1274318.1)
+Upgrading firmware / Configuring SSH on Cisco Catalyst 4948 Ethernet Switch (Doc ID 1415044.1)
+How to Replace a Cisco 4948 / 4948E-F Ethernet Switch in an Engineered Systems rack [VCAP] (Doc ID 1531203.1)
+Exadata Enterprise Manager 13c Monitoring Template(Doc ID 2429854.1)
+How to Prepare an Infiniband Switch for Replacement(Doc ID 1636229.1)
+Exadata Write-Back Flash Cache – FAQ (Doc ID 1500257.1)
+How to change OS user password for Cell Node, Database Node , ILOM, KVM , Infiniband Switch , GigaBit Ethernet Switch and PDU on Exadata Database Machine (Doc ID 1291766.1)
+https://netsoftmate.com/blog/how-to-restore-compute-node-from-snapshot-backup-for-oracle-exadata/
+https://netsoftmate.com/blog/step-by-step-guide-of-exadata-snapshot-based-backup-of-compute-node-to-nfs-share/
+https://netsoftmate.com/blog/step-by-step-exadata-storage-cell-rescue/
+https://netsoftmate.com/blog/oracle-exadata-database-machine-x8-2-quick-overview/
+How To Update Exadata Management Network Switch Firmware(Doc ID 1593004.1)
+http://kankm.blogspot.com/2017/05/oracle-exadata-machine-default-passwords.html
+
+http://what-when-how.com/Tutorial/topic-816rrqij6/Oracle-Exadata-Recipes-A-Problem-Solution-Approach-bookmark.html
+
+NOTE:1093890.1 - Steps To Shutdown/Startup The Exadata & RDBMS Services and Cell/Compute Nodes On An Exadata Configuration
+NOTE:1188080.1 - Steps to shut down or reboot an Exadata storage cell without affecting ASM
+NOTE:2367609.1 - How to Shutdown and Startup Exadata database nodes running OVM
+NOTE:1539451.1 -How to shutdown the Exadata database nodes and storage cells in a rolling fashion so certain hardware tasks can be performed. 
+NOTE:1920255.1 : Exadata Health and Resource Usage Monitoring Technical Brief.
+How to setup Active DataGuard on Exadata Doc ID 1580796.1
+Changing Exadata AIDE Email and SMTP details (Doc ID 2651628.1)
+How to Replace an Exadata/ZDLRA X7/X8/X9/ Storage Cell Server F640 Flash Card (Doc ID 2362260.1)
+How to Replace an Exadata X10M Server Memory DIMM (Doc ID 2957202.1)
+Update Exadata ILOM firmware manually from Storage Cell software patchset (Doc ID 1327022.1)
+Oracle ACFS Snapshot Use Cases on Exadata (Doc ID 2761360.1)
+NOTE:2495335.1 - Updating the Cloud Tooling for Exadata Cloud Environment (DBaaS Tool a.k.a Cloud Tooling)
+Exadata Cloud Service Software Versions (Doc ID 2333222.1)
+To update Gen 1 Exadata Cloud at Customer systems to Database and Grid Infrastructure 19c, refer to the following documents:
+Exadata Database Service on Dedicated Infrastructure Operational Best Practices - 99999.2 (Doc ID 2834507.2)
+Document 2709296.1 - Upgrading to 19c Oracle Grid Infrastructure on Gen 1 Exadata Cloud at Customer
+Document 2709284.1 - Upgrading to 19c Oracle Database on Gen 1 Exadata Cloud at Customer
+
+19.x:Clone.pl script is deprecated and how to clone using gold-image (Doc ID 2565006.1)
+https://www.dbi-services.com/blog/18c-runinstaller-silent/
+https://mikedietrichde.com/2022/05/17/simple-database-installation-with-applyru-and-applyoneoffs/
+https://dohdatabase.com/2023/05/08/how-to-clone-oracle-home-without-using-clone-pl/
+TOP Note: Solutions for Typical Grid Infrastructure/RAC Database runInstaller/DBCA for RAC Issues (Doc ID 1056713.1)
+Gold Image How To (Doc ID 2965269.1)
+https://unknowndba.blogspot.com/2019/09/out-of-place-rolling-patching-aka.html
+https://dohdatabase.com/2023/05/30/files-to-move-during-oracle-database-out-of-place-patching/
+Patching automation :
+https://www.ludovicocaldara.net/dba/oh-mgmt-7/
+
+CPU Details :
+/opt/oracle.ExaWatcher/archive
+http://loredata.app/2023/05/29/exacc-vm-cluster-update-failed-and-resolution/
+
+
+Compatibility:
+============
+Oracle Clusterware (CRS/GI) - ASM - Database Version Compatibility (Doc ID 337737.1)
+Does your GI RU/RUR patch level have to match your database's? (mikedietrichde.com)
+
+
+
+Audit :
+=====
+
+NOTE:1020945.6 - How to Setup Auditing
+NOTE:1299033.1 - Primary Note For Oracle Database Auditing
+NOTE:167293.1 - Some Examples About Auditing And Output Of Auditing
+NOTE:30690.1 - Init.ora Parameter "AUDIT_TRAIL" Reference Note
+NOTE:352389.1 - Finding the source of failed login attempts.
+Manage Audit File Directory Growth with cron (Doc ID 1298957.1)
+AUDIT_SYS_OPERATIONS Set To FALSE Yet Audit Files Are Generated (308066.1)
+Init.ora Parameter "AUDIT_FILE_DEST" Reference Note (39796.1)
+How To Audit Of User Login & Logoff of Database by Standard Auditing (Doc ID 2509205.1)
+How To Audit Of User Login & Logoff of Database by Unified Auditing (Doc ID 2509211.1)
+
+Random:
+How to change the DISK_REPAIR_TIME timer after disk goes offline from failgroup (Doc ID 1404123.1)
+How To Gather & Backup ASM/ACFS Metadata In A Formatted Manner version 10.1, 10.2, 11.1, 11.2, 12.1, 12.2, 18.x and 19.x (Doc ID 470211.1)
+ORA-29701 and ORA-15077 Errors Starting Database Using ASM on Windows (Doc ID 1550328.1)
+IF: How to Switch to a New Undo Tablespace (Doc ID 1951695.1)
+Rename of the Windows database :
+How to rename an Oracle database (dba-oracle.com)
+ORA-1078 Database Cannot be Auto Started on Windows NT (Doc ID 124005.1)
+Daatabase service oradim windows edit:
+https://docs.oracle.com/en/database/oracle/oracle-database/19/ntqrf/editing-an-instance-using-oradim.html#GUID-8C68A011-B049-43A8-9C7F-20C86617A18C
+When Creating Services Using ORADIM With Autostart Option, Their Startup Type Becomes Manual (Doc ID 412444.1)
+Making Database Connections (oracle.com)
+Information Center: Transportable Tablespaces (TTS) for Oracle Database (Doc ID 1461278.2)
+https://dba12c.wordpress.com/2016/09/08/oracle-table-reorganization-script/
+Diagnostic Tools Catalog (Doc ID 559339.1)
+How to: Determine if a Package that is About to be Compiled is Being Used Currently (Doc ID 1054939.6)
+
+From <https://support.oracle.com/epmos/faces/DocumentDisplay?_afrLoop=95594770720319&id=1054939.6&_afrWindowMode=0&_adf.ctrl-state=5ytaweedc_53> 
+
+
+
+Cloning :
+
+https://blog.toadworld.com/maa-creating-single-instance-physical-standby-for-a-rac-primary-12c
+ORACLE9i DBA: Clone DB on New Host with HotBkp (ocp9i.blogspot.com)
+https://rupeshanantghubade.blogspot.com/2017/05/clone-two-node-rac-into-single-instance_27.html
+
+Tablespace :
+Snapshot too old error :
+https://support.delphix.com/Continuous_Compliance_Engine_(formerly_Masking_Engine)/Resolving_ORA-01555_Error%3A_Snapshot_too_old_(KBA1827)
+
+Dropping undo tablespace :
+https://www.thegeekdiary.com/how-to-drop-undo-tablespace-in-oracle-database/#:~:text=Switch%20to%20the%20new%20Undo,Undo%20tablespace%20to%20be%20dropped.
+
+SSL Certificate :
+How to Renew an Expired or Expiring SSL Certificate for WebLogic Server (Doc ID 2215862.1)
+How to Replace an Expired or Expiring Certificate in FMW 11g Wallets (Doc ID 1371209.1)
+How To Display SSL User Certificate Validity Expiration Date (Not After) From Oracle Wallet (Doc ID 2503719.1)
+Troubleshooting ORA-29024:Certificate Validation Failure (Doc ID 756978.1)
+Getting Error ORA-29024: Certificate Validation Failure on APEX (Doc ID 2950344.1)
+RDC - How to Collect Standard Information for Troubleshooting Issues when Accessing https URL using UTL_HTTP (Doc ID 2471062.1)
+
+2552208.1
+2517025.1
+
+
+Oracle Apps:
+Best Practices for Gathering Statistics with Oracle E-Business Suite (Doc ID 1586374.1)
+Installing Certificate on the WebLogic Server (oracle.com)
+
+
+
+
+
+
+
+
+Miscellaneous :
+How to write Oracle SQLPlus Export to CSV File?
+Exporting to Excel from ORACLE via SQL*Plus – Thom Bedford
+
+DBSAT
+Please reach out to Pedro for DBSAT (and DB assessments in AVDF & Data Safe) at pedro.lopes@oracle.com
+The Achilles Heel of Cybersecurity: Lessons from a Recent Data Breach
+Oracle Database Security Assessment Tool (DBSAT) (Doc ID 2138254.1)
+
+DB Security - Database Security Assessment Tool (DBSAT)
+
+
+DB Security - ASO ( Transparent Data Encryption & Data Redaction )
+
+DB Security - Unified Auditing
+
+DB Security - Audit Vault and DB Firewall
+Product manager => Najiah.abide@oracle.com  (Contact when there is issue)
+
+
+
+Autonomous database :
+
+Jaffar's (Mr RAC) Oracle blog (jaffardba.blogspot.com)
+
+Alert log for the Autonomous database 
+Operating System access from within the Autonomous Database | Julian Dontcheff's Database Blog (wordpress.com)
+
+SELECT ORIGINATING_TIMESTAMP, MESSAGE_LEVEL, MESSAGE_TEXT, PROBLEM_KEY
+FROM V$DIAG_ALERT_EXT
+WHERE MESSAGE_TEXT LIKE '%ORA-%' AND ORIGINATING_TIMESTAMP > sysdate-7
+ORDER BY ORIGINATING_TIMESTAMP DESC;
+
+Select payload from V$DIAG_TRACE_FILE_CONTENTS where trace_filename = 'aadf.trc' order by Line_number;
+
+
+
+Home for all the Oracle documentation  :
+Oracle Cloud Infrastructure
+
+
+
+
+
+Oracle Licensing information and there offering in the product :  Licensing Information (oracle.com)
+Autonomous Health Framework (AHF) - Including TFA and ORAchk/EXAchk (Doc ID 2550798.1)
+How to Modify Private Network Information in Oracle Clusterware (Doc ID 283684.1)
+How to Modify Public Network Information including VIP in Oracle Clusterware (Doc ID 276434.1)
+How to Modify SCAN Setting or SCAN Listener Port after Installation (Doc ID 972500.1)
+Oracle Database 23ai: New Features for Administrators - Oracle MyLearn
+
+NOTE:750982.1 - TRM Trace Files Getting Generated
+NOTE:564269.1 - Retention Policy for ADR
+NOTE:756140.1 - ADRCI PURGE Command Is Not Cleaning Up CDUMP_{TIMESTAMP} Folders In TRACE Directory
+NOTE:811844.1 - ADRCI Purge -age Deletes Almost All Files Instead Of Only The Ones Older Than days
+NOTE:453125.1 - Diagnosability: Frequently Asked Questions
+
+Apache Log4j Security Alert CVE-2021-44228, CVE-2021-45046 and CVE-2021-45105 on Oracle Auto Service Request (Doc ID 2828600.1)
+
+Solarix operating system command :
+=============================
+NOTE:1285485.1 - GUDS - A Script for Gathering Solaris Performance Data
+NOTE:1009494.1 - How to use DTrace and mdb to Interpret vmstat Statistics
+NOTE:1007447.1 - Solaris Performance Analysis And Tuning, Step by Step
+NOTE:1009500.1 - How to Check and Analyze Solaris Memory Usage
+NOTE:1348585.1 - Monitoring Memory and Swap Usage to Avoid A Solaris Hang
+How to Use Solaris vmstat (Virtual Memory Statistics) to Find Performance Bottlenecks (Doc ID 1007494.1)
+Care needed interpreting vmstat runqueue statistics (Doc ID 1007815.1)
+
+
+Exadata Database Machine and Exadata Storage Server Supported Versions (Doc ID 888828.1)
+
+Connection Client failover in Oracle DataGuard Environment with SRVCTL | Smart way of Technology (smarttechways.com)
+
+Study the client apps :
+INC163518
+
+
+User's Guide (oracle.com)
+User's Guide (oracle.com)
+
+
+
+https://dbakevlar.com/2013/08/oracle-time-units-in-v-views/
+https://dbakevlar.com/tag/performance/
+https://dbakevlar.com/2013/09/metrics-vs-statistics/
+
