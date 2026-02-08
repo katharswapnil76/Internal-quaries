@@ -1,0 +1,42 @@
+Get the list of all the orphans users and their list :
+
+DECLARE @db SYSNAME;
+DECLARE @sql NVARCHAR(MAX);
+
+DECLARE db_cursor CURSOR FOR
+SELECT name
+FROM sys.databases
+WHERE name NOT IN ('master','model','msdb','tempdb');
+
+OPEN db_cursor;
+FETCH NEXT FROM db_cursor INTO @db;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @sql = '
+USE [' + @db + '];
+
+SELECT
+    ''-- Database: ' + @db + ''' AS Output
+UNION ALL
+SELECT
+    ''ALTER USER ['' + dp.name + ''] WITH LOGIN = ['' + dp.name + ''];''
+FROM sys.database_principals dp
+LEFT JOIN sys.server_principals sp
+       ON dp.sid = sp.sid
+WHERE sp.sid IS NULL
+  AND dp.type IN (''S'',''U'')
+  AND dp.name NOT IN (''dbo'',''guest'',''sys'',''INFORMATION_SCHEMA'');
+';
+
+    PRINT '------------------------------------------------------------';
+    PRINT 'Database: ' + @db;
+    PRINT '------------------------------------------------------------';
+
+    EXEC (@sql);
+
+    FETCH NEXT FROM db_cursor INTO @db;
+END
+
+CLOSE db_cursor;
+DEALLOCATE db_cursor;
