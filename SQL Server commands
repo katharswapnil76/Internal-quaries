@@ -1,7 +1,8 @@
-
-SELECT 'CREATE LOGIN [' + sp.name + '] ' + 'WITH PASSWORD = ''<RESET_PASSWORD>'' , CHECK_POLICY = OFF;' FROM sys.server_principals sp WHERE sp.type IN ('S','U') AND sp.name NOT LIKE '##%' AND sp.name NOT LIKE 'NT %' AND sp.name NOT IN ('sa');
-
+To check which are the existing login disabled in the server :
 select sp.name from sys.server_principals sp where sp.type IN ('S','U') AND sp.name NOT LIKE '##%' AND sp.name NOT LIKE 'NT %' AND sp.name NOT IN ('sa') AND sp.is_disabled = 1;
+
+To get the create statement for the create user :
+SELECT 'CREATE LOGIN [' + sp.name + '] ' + 'WITH PASSWORD = ''@cT1m1ze@Dm1n1str4t0r'' , CHECK_POLICY = OFF;' FROM sys.server_principals sp WHERE sp.type IN ('S','U') AND sp.name NOT LIKE '##%' AND sp.name NOT LIKE 'NT %' AND sp.name NOT IN ('sa');
 
 
 
