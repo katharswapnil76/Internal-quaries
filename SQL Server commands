@@ -1,3 +1,200 @@
+## SQL Server Performance Tuning :
+---------------------------------
+Step 1 → Are we CPU, Memory, I/O, or Locking bound?
+Use:
+
+Wait Stats
+sys.dm_exec_requests
+Performance Insights graphs
+
+Step 2 → Identify top queries causing load
+Use:
+
+Top CPU
+Top IO
+Long running queries
+
+Step 3 → Check for blocking & lock chains
+Use:
+
+Blocking queries
+sys.dm_tran_locks
+
+Step 4 → Check execution plans
+Look for:
+
+Missing indexes
+Bad estimates
+Key lookups
+Scan vs Seek
+
+Step 5 → Check storage IOPS in RDS
+Use AWS console and queries for I/O waits:
+
+PAGEIOLATCH
+WRITELOG
+
+Step 6 → Tune indexes, stats, queries
+
+Create missing indexes
+Update statistics
+Reduce parallelism if needed
+
+---  Which application or node is generating the most workload? (Grouped by application node and database and status)
+SELECT
+    s.program_name AS application_name,
+    DB_NAME(r.database_id) AS database_name,
+    r.status,
+    COUNT(*) AS total_requests,
+    SUM(r.cpu_time) AS total_cpu_ms,
+    SUM(r.total_elapsed_time) AS total_elapsed_ms
+FROM sys.dm_exec_sessions s
+JOIN sys.dm_exec_requests r 
+    ON s.session_id = r.session_id
+GROUP BY s.program_name, DB_NAME(r.database_id), r.status
+ORDER BY total_requests DESC;
+
+---  what is running right now in your AWS RDS SQL Server instance
+SELECT
+      s.session_id,
+      r.request_id,
+      s.login_name,
+      s.host_name,
+      s.program_name AS application_name,
+      DB_NAME(r.database_id) AS database_name,
+      r.status,
+      r.command,
+      r.cpu_time,
+      r.total_elapsed_time,
+      r.wait_type,
+      r.wait_time,
+      r.wait_resource,
+      r.blocking_session_id,
+      r.reads, r.writes,
+      r.logical_reads,
+      SUBSTRING(t.text, (r.statement_start_offset/2)+1,
+        ((CASE r.statement_end_offset 
+             WHEN -1 THEN DATALENGTH(t.text)
+             ELSE r.statement_end_offset 
+         END - r.statement_start_offset)/2) + 1) AS running_statement,
+      t.text AS full_query_text
+FROM sys.dm_exec_sessions s
+JOIN sys.dm_exec_requests r
+      ON s.session_id = r.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+ORDER BY r.total_elapsed_time DESC;
+
+--- See All Running / Waiting Queries With Waits
+SELECT
+    r.session_id,
+    s.login_name,
+    s.host_name,
+    s.program_name,
+    DB_NAME(r.database_id) AS database_name,
+    r.status,
+    r.command,
+    r.wait_type,
+    r.wait_time,
+    r.wait_resource,
+    r.cpu_time,
+    r.total_elapsed_time,
+    t.text AS query_text
+FROM sys.dm_exec_requests r
+JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+ORDER BY r.wait_time DESC;
+
+--- Identify Blocking Chains
+SELECT
+    r.session_id AS blocked_session,
+    r.blocking_session_id AS blocker_session,
+    DB_NAME(r.database_id) AS database_name,
+    r.status,
+    r.wait_type,
+    r.wait_time,
+    r.wait_resource,
+    t.text AS blocked_query,
+    bt.text AS blocking_query
+FROM sys.dm_exec_requests r
+LEFT JOIN sys.dm_exec_requests br 
+        ON r.blocking_session_id = br.session_id
+OUTER APPLY sys.dm_exec_sql_text(r.sql_handle) t
+OUTER APPLY sys.dm_exec_sql_text(br.sql_handle) bt
+WHERE r.blocking_session_id <> 0;
+
+--- Check Current CPU Consumer : 
+SELECT TOP 20
+    s.session_id,
+    s.login_name,
+    s.host_name,
+    s.program_name,
+    r.cpu_time,
+    r.total_elapsed_time,
+    t.text AS query_text
+FROM sys.dm_exec_requests r
+JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+ORDER BY r.cpu_time DESC;
+
+--- High I/O Queries
+SELECT TOP 20
+    r.session_id,
+    DB_NAME(r.database_id) AS database_name,
+    r.reads, r.writes,
+    r.logical_reads,
+    r.wait_type,
+    r.wait_time,
+    t.text AS query_text
+FROM sys.dm_exec_requests r
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+ORDER BY r.reads + r.writes DESC;
+
+--- Checking Memory usage 
+SELECT
+    type,
+    SUM(pages_kb)/1024 AS MB_used
+FROM sys.dm_os_memory_clerks
+GROUP BY type
+ORDER BY MB_used DESC;
+
+--- Check Top Queries Waiting for Memory Grants
+SELECT
+    r.session_id,
+    r.request_id,
+    r.granted_query_memory,
+    r.wait_type,
+    r.wait_resource,
+    t.text
+FROM sys.dm_exec_requests r
+CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+WHERE r.wait_type LIKE '%MEMORY%';
+
+--- Index Fragmentation
+SELECT
+    DB_NAME(database_id) AS database_name,
+    OBJECT_NAME(object_id) AS table_name,
+    index_id,
+    avg_fragmentation_in_percent
+FROM sys.dm_db_index_physical_stats(DB_ID(), NULL, NULL, NULL, 'LIMITED')
+WHERE avg_fragmentation_in_percent > 30
+ORDER BY avg_fragmentation_in_percent DESC;
+
+--- Missing Indexes (Top Recommendations)
+SELECT TOP 20
+    migs.user_seeks,
+    migs.user_scans,
+    mid.statement AS table_name,
+    mid.equality_columns,
+    mid.inequality_columns,
+    mid.included_columns
+FROM sys.dm_db_missing_index_details mid
+JOIN sys.dm_db_missing_index_groups mig 
+        ON mid.index_handle = mig.index_handle
+JOIN sys.dm_db_missing_index_group_stats migs 
+        ON mig.index_group_handle = migs.group_handle
+ORDER BY migs.user_seeks DESC;
+
+
 ## Backup and Restore on RDS:
 -----------------------------
 --- create full backup
