@@ -1,5 +1,5 @@
-Backup and Restore on RDS:
--------------------------
+## Backup and Restore on RDS:
+-----------------------------
 --- create full backup
 exec msdb.dbo.rds_backup_database
 	@source_db_name='AdventureWorks2014',
@@ -40,31 +40,28 @@ exec msdb.dbo.rds_restore_database
 	@with_norecovery=0,
 	@type='DIFFERENTIAL';
 
-
-Checking the status of Always on in RDS :
------------------------------------------
-SELECT CASE WHEN dm.mirroring_state_desc IS NOT NULL THEN 'Multi-AZ (Mirroring)'
-    WHEN dhdrs.group_database_id IS NOT NULL THEN 'Multi-AZ (AlwaysOn)'
-    ELSE 'Single-AZ'
-    END 'high_availability'
-FROM sys.databases sd
-LEFT JOIN sys.database_mirroring dm ON sd.database_id = dm.database_id
-LEFT JOIN sys.dm_hadr_database_replica_states dhdrs ON sd.database_id = dhdrs.database_id AND dhdrs.is_local = 1
-WHERE DB_NAME(sd.database_id) = 'rdsadmin';
-
-
-To check which are the existing login disabled in the server :
+################################################################################################
+## To check which are the existing login disabled in the server :
 -------------------------------------------------------------
 select sp.name from sys.server_principals sp where sp.type IN ('S','U') AND sp.name NOT LIKE '##%' AND sp.name NOT LIKE 'NT %' AND sp.name NOT IN ('sa') AND sp.is_disabled = 1;
 
-To get the create statement for the create user :
+## To get the create statement for the create user :
 -------------------------------------------------
 SELECT 'CREATE LOGIN [' + sp.name + '] ' + 'WITH PASSWORD = ''@cT1m1ze@Dm1n1str4t0r'' , CHECK_POLICY = OFF;' FROM sys.server_principals sp WHERE sp.type IN ('S','U') AND sp.name NOT LIKE '##%' AND sp.name NOT LIKE 'NT %' AND sp.name NOT IN ('sa');
 
+## Get the list of all the orphans users and their list :
+--------------------------------------------------------
+--- Checking for the orphans users in one perticular database : 
 
+SELECT dp.name AS UserName
+FROM sys.database_principals dp
+LEFT JOIN sys.server_principals sp ON dp.sid = sp.sid
+WHERE dp.type = 'S'
+  AND dp.authentication_type = 1
+  AND sp.sid IS NULL;
 
-Get the list of all the orphans users and their list :
-------------------------------------------------------
+--- Below we can check in the master database and will give for all the database it will check for the sql server user as well as window group user:
+
 DECLARE @db SYSNAME;
 DECLARE @sql NVARCHAR(MAX);
 
@@ -105,3 +102,49 @@ END
 
 CLOSE db_cursor;
 DEALLOCATE db_cursor;
+
+--- Below query will help to determine the windowsgroup login orphans users in database :
+
+SELECT dp.name AS DBUser, dp.type_desc, dp.sid
+FROM sys.database_principals dp
+LEFT JOIN sys.server_principals sp ON dp.sid = sp.sid
+WHERE dp.type = 'G'    -- Windows groups
+  AND sp.sid IS NULL
+  AND dp.name NOT IN ('dbo','guest','sys','INFORMATION_SCHEMA');
+
+--- How to fix the windows group orphans users in the database : 
+
+Case A — The group exists in AD
+		CREATE LOGIN [DOMAIN\YourGroup] FROM WINDOWS;
+Then map it =>
+		USE YourDatabase;
+		ALTER USER [DOMAIN\YourGroup] WITH LOGIN = [DOMAIN\YourGroup];
+
+Case B — Domain changed (Example: OLD-DOMAIN\AML_Group → NEW-DOMAIN\AML_Group)
+		CREATE LOGIN [NEW-DOMAIN\AML_Group] FROM WINDOWS;
+
+		USE YourDatabase;
+		ALTER USER [APP_AML_CDD_APP] WITH LOGIN = [NEW-DOMAIN\AML_Group];
+
+Case C — Group does not exist anymore
+	you must either:
+
+	Create the missing AD group
+	or
+	Drop the user inside the DB (if unused)
+
+USE YourDatabase;
+DROP USER [APP_AML_CDD_APP];
+
+################################################################################################
+
+## Checking the status of Always on in RDS :
+-----------------------------------------
+SELECT CASE WHEN dm.mirroring_state_desc IS NOT NULL THEN 'Multi-AZ (Mirroring)'
+    WHEN dhdrs.group_database_id IS NOT NULL THEN 'Multi-AZ (AlwaysOn)'
+    ELSE 'Single-AZ'
+    END 'high_availability'
+FROM sys.databases sd
+LEFT JOIN sys.database_mirroring dm ON sd.database_id = dm.database_id
+LEFT JOIN sys.dm_hadr_database_replica_states dhdrs ON sd.database_id = dhdrs.database_id AND dhdrs.is_local = 1
+WHERE DB_NAME(sd.database_id) = 'rdsadmin';
